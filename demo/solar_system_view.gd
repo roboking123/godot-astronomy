@@ -1,6 +1,13 @@
 extends Control
 ## Solar system top-down view — shows real-time planet positions on the ecliptic plane
 
+# 天體 ID（0-7 與 AstroPlanets.Planet 數值對齊，可直接轉型）
+enum Body {
+	MERCURY, VENUS, EARTH, MARS, JUPITER, SATURN, URANUS, NEPTUNE,
+	SUN, MOON,
+}
+const PLANET_COUNT: int = 8  # Body.MERCURY ~ Body.NEPTUNE
+
 const PLANET_COLORS: Array[Color] = [
 	Color(0.7, 0.7, 0.7),     # Mercury — grey
 	Color(0.9, 0.8, 0.5),     # Venus — pale yellow
@@ -20,12 +27,6 @@ const PLANET_RADII_PX: Array[float] = [
 	3.0, 4.5, 4.5, 3.5, 8.0, 7.5, 6.0, 6.0
 ]
 const SUN_RADIUS_PX: float = 14.0
-
-# 行星數量（與 AstroPlanets.Planet enum 對齊）
-const PLANET_COUNT: int = 8
-# 選擇 ID：0-7 = AstroPlanets.Planet enum, 加上太陽和月球
-const ID_SUN: int = 8
-const ID_MOON: int = 9
 
 const ORBIT_PERIODS_DAYS: Array[float] = [
 	87.97, 224.70, 365.25, 686.97, 4332.59, 10759.22, 30688.5, 60182.0
@@ -55,32 +56,18 @@ var _orbit_points: Array = []  # Array[PackedVector2Array]
 var _orbit_base_pos: Array = []  # 烘焙時的行星位置（Vector2）
 var _moon_orbit_points: PackedVector2Array
 
-var _selected: int = -1  # -1=無, 0-7=AstroPlanets.Planet, ID_SUN, ID_MOON
+var _selected: int = -1  # -1=無, 其餘用 Body enum
 var _focus_offset: Vector2 = Vector2.ZERO
 const FOCUS_ZOOM: Dictionary = {
-	AstroPlanets.Planet.MERCURY: 3000.0,
-	AstroPlanets.Planet.VENUS: 1500.0,
-	AstroPlanets.Planet.EARTH: 5000.0,
-	AstroPlanets.Planet.MARS: 1000.0,
-	AstroPlanets.Planet.JUPITER: 200.0,
-	AstroPlanets.Planet.SATURN: 120.0,
-	AstroPlanets.Planet.URANUS: 60.0,
-	AstroPlanets.Planet.NEPTUNE: 40.0,
-	ID_SUN: 800.0,
-	ID_MOON: 15000.0,
+	Body.MERCURY: 3000.0, Body.VENUS: 1500.0, Body.EARTH: 5000.0,
+	Body.MARS: 1000.0, Body.JUPITER: 200.0, Body.SATURN: 120.0,
+	Body.URANUS: 60.0, Body.NEPTUNE: 40.0,
+	Body.SUN: 800.0, Body.MOON: 15000.0,
 }
 # 內→外順序：太陽、水星、金星、地球、月球、火星～海王星
 const SELECT_ORDER: Array[int] = [
-	ID_SUN,
-	AstroPlanets.Planet.MERCURY,
-	AstroPlanets.Planet.VENUS,
-	AstroPlanets.Planet.EARTH,
-	ID_MOON,
-	AstroPlanets.Planet.MARS,
-	AstroPlanets.Planet.JUPITER,
-	AstroPlanets.Planet.SATURN,
-	AstroPlanets.Planet.URANUS,
-	AstroPlanets.Planet.NEPTUNE,
+	Body.SUN, Body.MERCURY, Body.VENUS, Body.EARTH, Body.MOON,
+	Body.MARS, Body.JUPITER, Body.SATURN, Body.URANUS, Body.NEPTUNE,
 ]
 
 
@@ -101,9 +88,9 @@ func _process(delta: float) -> void:
 	if _selected >= 0 and _selected < PLANET_COUNT:
 		var pos: Vector3 = _planet_positions[_selected]
 		_focus_offset = -Vector2(pos.x, -pos.y) * _au_to_px
-	elif _selected == ID_MOON:
+	elif _selected == Body.MOON:
 		_focus_offset = -Vector2(_moon_pos.x, -_moon_pos.y) * _au_to_px
-	elif _selected == ID_SUN:
+	elif _selected == Body.SUN:
 		_focus_offset = Vector2.ZERO
 	else:
 		_focus_offset = Vector2.ZERO
@@ -135,14 +122,14 @@ func _update_positions() -> void:
 
 	for i: int in PLANET_COUNT:
 		var planet: AstroPlanets.Planet = i as AstroPlanets.Planet
-		if planet == AstroPlanets.Planet.EARTH:
+		if planet == Body.EARTH:
 			_planet_positions[i] = -AstroSun.sun_position(_current_time)
 		else:
 			_planet_positions[i] = AstroPlanets.helio_position(planet, _current_time)
 
 	# 月球（地心 J2000 座標，轉日心）
 	var geo: AstroMoon.GeoMoonResult = AstroMoon.geo_moon(_current_time)
-	var earth_pos: Vector3 = _planet_positions[AstroPlanets.Planet.EARTH]
+	var earth_pos: Vector3 = _planet_positions[Body.EARTH]
 	_moon_pos = earth_pos + geo.j2000
 	# Update date label
 	var ut: float = _current_time.ut
@@ -169,7 +156,7 @@ func _draw() -> void:
 
 	# Draw Sun
 	draw_circle(_center, SUN_RADIUS_PX, Color(1.0, 0.9, 0.3))
-	if _selected == ID_SUN:
+	if _selected == Body.SUN:
 		_draw_selection_bracket(_center, SUN_RADIUS_PX + 6)
 
 	# Draw planets
@@ -200,10 +187,10 @@ func _draw() -> void:
 
 	# 月球（放大到可見或選中時才畫）
 	var moon_real_px: float = MOON_ORBIT_AU * _au_to_px
-	if moon_real_px > MOON_VISIBLE_PX or _selected == ID_MOON:
+	if moon_real_px > MOON_VISIBLE_PX or _selected == Body.MOON:
 		var earth_screen: Vector2 = _center + Vector2(
-			_planet_positions[AstroPlanets.Planet.EARTH].x,
-			-_planet_positions[AstroPlanets.Planet.EARTH].y) * _au_to_px
+			_planet_positions[Body.EARTH].x,
+			-_planet_positions[Body.EARTH].y) * _au_to_px
 		var moon_screen: Vector2 = _center + Vector2(_moon_pos.x, -_moon_pos.y) * _au_to_px
 		if _moon_orbit_points.size() > 1:
 			var moon_scaled: PackedVector2Array = PackedVector2Array()
@@ -212,7 +199,7 @@ func _draw() -> void:
 				moon_scaled[j] = _center + _moon_orbit_points[j] * _au_to_px
 			draw_polyline(moon_scaled, Color(MOON_COLOR, 0.3), 1.0, true)
 		draw_line(earth_screen, moon_screen, Color(MOON_COLOR, 0.3), 1.0)
-		if _selected == ID_MOON:
+		if _selected == Body.MOON:
 			_draw_selection_bracket(moon_screen, MOON_RADIUS_PX + 6)
 		draw_circle(moon_screen, MOON_RADIUS_PX, MOON_COLOR)
 		draw_string(ThemeDB.fallback_font, moon_screen + Vector2(4, -4),
@@ -230,7 +217,7 @@ func _bake_orbits() -> void:
 			var t: AstroTime.Moment = AstroTime.time_from_days(
 				base_ut + period * float(j) / float(ORBIT_SAMPLES))
 			var pos: Vector3
-			if planet == AstroPlanets.Planet.EARTH:
+			if planet == Body.EARTH:
 				pos = -AstroSun.sun_position(t)
 			else:
 				pos = AstroPlanets.helio_position(planet, t)
@@ -286,12 +273,12 @@ func _draw_selection_bracket(center: Vector2, half: float) -> void:
 func _try_select(click_pos: Vector2) -> void:
 	# 月球（可見時）
 	var moon_screen: Vector2 = _center + Vector2(_moon_pos.x, -_moon_pos.y) * _au_to_px
-	if (MOON_ORBIT_AU * _au_to_px > MOON_VISIBLE_PX or _selected == ID_MOON) and click_pos.distance_to(moon_screen) < MOON_RADIUS_PX + 12:
-		_select(ID_MOON)
+	if (MOON_ORBIT_AU * _au_to_px > MOON_VISIBLE_PX or _selected == Body.MOON) and click_pos.distance_to(moon_screen) < MOON_RADIUS_PX + 12:
+		_select(Body.MOON)
 		return
 	# 太陽
 	if click_pos.distance_to(_center) < SUN_RADIUS_PX + 10:
-		_select(ID_SUN)
+		_select(Body.SUN)
 		return
 	# 行星
 	var max_orbit: int = PLANET_COUNT
@@ -314,7 +301,7 @@ func _select(idx: int) -> void:
 
 func _select_next() -> void:
 	if _selected == -1:
-		_select(AstroPlanets.Planet.EARTH)
+		_select(Body.EARTH)
 		return
 	var idx: int = SELECT_ORDER.find(_selected)
 	if idx < SELECT_ORDER.size() - 1:
@@ -323,7 +310,7 @@ func _select_next() -> void:
 
 func _select_prev() -> void:
 	if _selected == -1:
-		_select(AstroPlanets.Planet.EARTH)
+		_select(Body.EARTH)
 		return
 	var idx: int = SELECT_ORDER.find(_selected)
 	if idx > 0:
@@ -340,14 +327,14 @@ func _deselect() -> void:
 func _update_info_panel() -> void:
 	var text: String = ""
 
-	if _selected == ID_SUN:
+	if _selected == Body.SUN:
 		text += "[b]Sun[/b]\n\n"
 		text += "Type: G2V Main Sequence\n"
-		text += "Distance from Earth: %.4f AU\n" % _planet_positions[AstroPlanets.Planet.EARTH].length()
+		text += "Distance from Earth: %.4f AU\n" % _planet_positions[Body.EARTH].length()
 		info_label.text = text
 		return
 
-	if _selected == ID_MOON:
+	if _selected == Body.MOON:
 		var geo_moon: AstroMoon.GeoMoonResult = AstroMoon.geo_moon(_current_time)
 		var lib: AstroMoon.LibrationResult = AstroMoon.libration(
 			_current_time, geo_moon.ecliptic, geo_moon.tobl)
@@ -372,7 +359,7 @@ func _update_info_panel() -> void:
 	var helio_dist: float = pos.length()
 
 	# 地心距離
-	var earth_pos: Vector3 = _planet_positions[AstroPlanets.Planet.EARTH]
+	var earth_pos: Vector3 = _planet_positions[Body.EARTH]
 	var geo_dist: float = (pos - earth_pos).length()
 
 	# 從地球觀測的方位角/高度角（台北預設）
@@ -395,7 +382,7 @@ func _update_info_panel() -> void:
 	text += "Above horizon: %s\n" % above
 
 	# 地球特有：月球資訊
-	if _selected == AstroPlanets.Planet.EARTH:
+	if _selected == Body.EARTH:
 		var geo_moon: AstroMoon.GeoMoonResult = AstroMoon.geo_moon(_current_time)
 		var lib: AstroMoon.LibrationResult = AstroMoon.libration(
 			_current_time, geo_moon.ecliptic, geo_moon.tobl)
