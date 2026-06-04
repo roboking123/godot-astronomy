@@ -377,3 +377,4 @@ static func _search_altitude(
 			if t2.ut > start_time.ut + limit_days:
 				return null
 			t1 = t2; a1 = a2
+	return null

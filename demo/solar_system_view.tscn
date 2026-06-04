@@ -1,0 +1,58 @@
+[gd_scene format=3 uid="uid://solar001"]
+
+[ext_resource type="Script" path="res://demo/solar_system_view.gd" id="1_solar"]
+
+[node name="SolarSystemView" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_solar")
+
+[node name="TopBar" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 36.0
+grow_horizontal = 2
+theme_override_constants/separation = 12
+
+[node name="DateLabel" type="Label" parent="TopBar"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Loading..."
+
+[node name="Sep1" type="VSeparator" parent="TopBar"]
+layout_mode = 2
+
+[node name="ZoomLabel" type="Label" parent="TopBar"]
+layout_mode = 2
+text = "Zoom:"
+
+[node name="ZoomSlider" type="HSlider" parent="TopBar"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(150, 0)
+min_value = 5.0
+max_value = 500.0
+step = 1.0
+value = 80.0
+
+[node name="Sep2" type="VSeparator" parent="TopBar"]
+layout_mode = 2
+
+[node name="InnerToggle" type="CheckBox" parent="TopBar"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Inner only"
+
+[node name="Sep3" type="VSeparator" parent="TopBar"]
+layout_mode = 2
+
+[node name="HelpLabel" type="Label" parent="TopBar"]
+layout_mode = 2
+text = "← → ±1 day | ↑ ↓ ±30 days | Home = now | Scroll = zoom"
+theme_override_colors/font_color = Color(0.6, 0.6, 0.6, 1)
+theme_override_font_sizes/font_size = 11

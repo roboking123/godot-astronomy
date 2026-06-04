@@ -52,7 +52,27 @@ func _update_display() -> void:
 	text += "  Phase: %.1f° (%s)\n\n" % [result.moon_phase_deg, _phase_name(result.moon_phase_deg)]
 
 	text += "[b]⏱ Sidereal[/b]\n"
-	text += "  GAST: %.4f h\n" % result.sidereal_time
+	text += "  GAST: %.4f h\n\n" % result.sidereal_time
+
+	# Planets
+	var time: AstroTime.Moment = AstroTime.make_time(
+		now.year, now.month, now.day, now.hour, now.minute, float(now.second))
+	var planet_names: Array[String] = [
+		"Mercury", "Venus", "Earth", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune"]
+	text += "[b]🪐 Planets[/b]\n"
+	for i: int in AstroPlanets.Planet.size():
+		if i == AstroPlanets.Planet.EARTH:
+			continue
+		var planet: AstroPlanets.Planet = i as AstroPlanets.Planet
+		var hor: AstroCoords.HorizonCoord = AstroPlanets.planet_horizon(
+			planet, now.year, now.month, now.day,
+			now.hour, now.minute, float(now.second),
+			lat_input.value, lon_input.value)
+		var helio: Vector3 = AstroPlanets.helio_position(planet, time)
+		var dist_au: float = helio.length()
+		var above: String = "▲" if hor.altitude > 0.0 else "▽"
+		text += "  %s %s  Az:%.1f° Alt:%.1f° R:%.2f AU\n" % [
+			above, planet_names[i], hor.azimuth, hor.altitude, dist_au]
 
 	output_label.text = text
 
