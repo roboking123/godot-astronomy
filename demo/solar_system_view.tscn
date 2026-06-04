@@ -29,7 +29,7 @@ layout_mode = 2
 
 [node name="HelpLabel" type="Label" parent="TopBar"]
 layout_mode = 2
-text = "↑ ↓ ±30days | Space=speed | R=reset | Click=select | ESC=deselect | Scroll=zoom"
+text = "← → select | ↑ ↓ ±30days | Space=speed | R=reset | ESC=deselect | Scroll=zoom"
 theme_override_colors/font_color = Color(0.6, 0.6, 0.6, 1)
 theme_override_font_sizes/font_size = 11
 
