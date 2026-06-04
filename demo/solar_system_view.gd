@@ -155,7 +155,10 @@ func _draw() -> void:
 		draw_polyline(scaled, Color(0.2, 0.2, 0.3, 0.5), 1.0, true)
 
 	# Draw Sun
-	draw_circle(_center, SUN_RADIUS_PX, Color(1.0, 0.9, 0.3))
+	var sun_color := Color(1.0, 0.9, 0.3)
+	draw_circle(_center, SUN_RADIUS_PX, sun_color)
+	draw_string(ThemeDB.fallback_font, _center + Vector2(SUN_RADIUS_PX + 4, -SUN_RADIUS_PX - 4),
+		"Sun", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, sun_color)
 	if _selected == Body.SUN:
 		_draw_selection_bracket(_center, SUN_RADIUS_PX + 6)
 
@@ -304,8 +307,7 @@ func _select_next() -> void:
 		_select(Body.EARTH)
 		return
 	var idx: int = SELECT_ORDER.find(_selected)
-	if idx < SELECT_ORDER.size() - 1:
-		_select(SELECT_ORDER[idx + 1])
+	_select(SELECT_ORDER[(idx + 1) % SELECT_ORDER.size()])
 
 
 func _select_prev() -> void:
@@ -313,8 +315,7 @@ func _select_prev() -> void:
 		_select(Body.EARTH)
 		return
 	var idx: int = SELECT_ORDER.find(_selected)
-	if idx > 0:
-		_select(SELECT_ORDER[idx - 1])
+	_select(SELECT_ORDER[(idx - 1 + SELECT_ORDER.size()) % SELECT_ORDER.size()])
 
 
 func _deselect() -> void:
