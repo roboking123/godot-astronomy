@@ -47,6 +47,7 @@ const MOON_RADIUS_PX: float = 2.0
 const MOON_COLOR: Color = Color(0.75, 0.75, 0.8)
 var _current_time: AstroTime.Moment
 var _orbit_points: Array = []  # Array[PackedVector2Array]
+var _orbit_base_pos: Array = []  # 烘焙時的行星位置（Vector2）
 var _moon_orbit_points: PackedVector2Array
 
 var _selected: int = -1  # -1=無, 0-7=行星, 8=太陽
@@ -60,12 +61,11 @@ const FOCUS_ZOOM: Dictionary = {
 func _ready() -> void:
 	_planet_positions.resize(8)
 	_orbit_points.resize(8)
+	_orbit_base_pos.resize(8)
 	zoom_slider.value = 80.0
 	_update_positions()
 	_bake_orbits()
 
-
-var _prev_offset: float = 0.0
 
 func _process(delta: float) -> void:
 	_au_to_px = zoom_slider.value
@@ -84,10 +84,17 @@ func _process(delta: float) -> void:
 		_focus_offset = Vector2.ZERO
 	_center = size / 2.0 + _focus_offset
 
-	var needs_rebake: bool = absf(_time_offset_days - _prev_offset) > 0.5
+	# 任何行星在螢幕上偏離軌道超過 2 像素就重烘焙
+	var needs_rebake: bool = false
+	for i: int in 8:
+		var pos3d: Vector3 = _planet_positions[i]
+		var cur_2d: Vector2 = Vector2(pos3d.x, -pos3d.y)
+		var base: Vector2 = _orbit_base_pos[i] as Vector2
+		if (cur_2d - base).length() * _au_to_px > 2.0:
+			needs_rebake = true
+			break
 	if needs_rebake:
 		_bake_orbits()
-		_prev_offset = _time_offset_days
 
 	if _selected >= 0:
 		_update_info_panel()
@@ -202,6 +209,8 @@ func _bake_orbits() -> void:
 				pos = AstroPlanets.helio_position(planet, t)
 			pts[j] = Vector2(pos.x, -pos.y)
 		_orbit_points[i] = pts
+		# 記住烘焙時的行星位置（第一個取樣點 = 當前時間）
+		_orbit_base_pos[i] = pts[0]
 
 	# 月球軌道（過去半圈 + 未來半圈）
 	var moon_pts: PackedVector2Array = PackedVector2Array()
