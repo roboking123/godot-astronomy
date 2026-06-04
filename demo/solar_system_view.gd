@@ -21,6 +21,8 @@ const PLANET_RADII_PX: Array[float] = [
 ]
 const SUN_RADIUS_PX: float = 14.0
 
+# 行星數量（與 AstroPlanets.Planet enum 對齊）
+const PLANET_COUNT: int = 8
 # 選擇 ID：0-7 = AstroPlanets.Planet enum, 加上太陽和月球
 const ID_SUN: int = 8
 const ID_MOON: int = 9
@@ -56,17 +58,36 @@ var _moon_orbit_points: PackedVector2Array
 var _selected: int = -1  # -1=無, 0-7=AstroPlanets.Planet, ID_SUN, ID_MOON
 var _focus_offset: Vector2 = Vector2.ZERO
 const FOCUS_ZOOM: Dictionary = {
-	0: 3000.0, 1: 1500.0, 2: 5000.0, 3: 1000.0,
-	4: 200.0, 5: 120.0, 6: 60.0, 7: 40.0, ID_SUN: 800.0, ID_MOON: 15000.0
+	AstroPlanets.Planet.MERCURY: 3000.0,
+	AstroPlanets.Planet.VENUS: 1500.0,
+	AstroPlanets.Planet.EARTH: 5000.0,
+	AstroPlanets.Planet.MARS: 1000.0,
+	AstroPlanets.Planet.JUPITER: 200.0,
+	AstroPlanets.Planet.SATURN: 120.0,
+	AstroPlanets.Planet.URANUS: 60.0,
+	AstroPlanets.Planet.NEPTUNE: 40.0,
+	ID_SUN: 800.0,
+	ID_MOON: 15000.0,
 }
 # 內→外順序：太陽、水星、金星、地球、月球、火星～海王星
-const SELECT_ORDER: Array[int] = [ID_SUN, 0, 1, 2, ID_MOON, 3, 4, 5, 6, 7]
+const SELECT_ORDER: Array[int] = [
+	ID_SUN,
+	AstroPlanets.Planet.MERCURY,
+	AstroPlanets.Planet.VENUS,
+	AstroPlanets.Planet.EARTH,
+	ID_MOON,
+	AstroPlanets.Planet.MARS,
+	AstroPlanets.Planet.JUPITER,
+	AstroPlanets.Planet.SATURN,
+	AstroPlanets.Planet.URANUS,
+	AstroPlanets.Planet.NEPTUNE,
+]
 
 
 func _ready() -> void:
-	_planet_positions.resize(8)
-	_orbit_points.resize(8)
-	_orbit_base_pos.resize(8)
+	_planet_positions.resize(PLANET_COUNT)
+	_orbit_points.resize(PLANET_COUNT)
+	_orbit_base_pos.resize(PLANET_COUNT)
 	_update_positions()
 	_bake_orbits()
 
@@ -77,7 +98,7 @@ func _process(delta: float) -> void:
 	_update_positions()
 
 	# 選中天體時，將其置中
-	if _selected >= 0 and _selected <= 7:
+	if _selected >= 0 and _selected < PLANET_COUNT:
 		var pos: Vector3 = _planet_positions[_selected]
 		_focus_offset = -Vector2(pos.x, -pos.y) * _au_to_px
 	elif _selected == ID_MOON:
@@ -90,7 +111,7 @@ func _process(delta: float) -> void:
 
 	# 任何行星在螢幕上偏離軌道超過 2 像素就重烘焙
 	var needs_rebake: bool = false
-	for i: int in 8:
+	for i: int in PLANET_COUNT:
 		var pos3d: Vector3 = _planet_positions[i]
 		var cur_2d: Vector2 = Vector2(pos3d.x, -pos3d.y)
 		var base: Vector2 = _orbit_base_pos[i] as Vector2
@@ -112,7 +133,7 @@ func _update_positions() -> void:
 		now.hour, now.minute, float(now.second))
 	_current_time = AstroTime.time_from_days(_current_time.ut + _time_offset_days)
 
-	for i: int in 8:
+	for i: int in PLANET_COUNT:
 		var planet: AstroPlanets.Planet = i as AstroPlanets.Planet
 		if planet == AstroPlanets.Planet.EARTH:
 			_planet_positions[i] = -AstroSun.sun_position(_current_time)
@@ -133,7 +154,7 @@ func _draw() -> void:
 	var bg_color := Color(0.05, 0.05, 0.1)
 	draw_rect(Rect2(Vector2.ZERO, size), bg_color)
 
-	var max_orbit: int = 8
+	var max_orbit: int = PLANET_COUNT
 
 	# 真實軌道線（VSOP87 取樣）
 	for i: int in max_orbit:
@@ -200,7 +221,7 @@ func _draw() -> void:
 
 func _bake_orbits() -> void:
 	var base_ut: float = _current_time.ut
-	for i: int in 8:
+	for i: int in PLANET_COUNT:
 		var planet: AstroPlanets.Planet = i as AstroPlanets.Planet
 		var period: float = ORBIT_PERIODS_DAYS[i]
 		var pts: PackedVector2Array = PackedVector2Array()
@@ -273,7 +294,7 @@ func _try_select(click_pos: Vector2) -> void:
 		_select(ID_SUN)
 		return
 	# 行星
-	var max_orbit: int = 8
+	var max_orbit: int = PLANET_COUNT
 	for i: int in max_orbit:
 		var pos3d: Vector3 = _planet_positions[i]
 		var screen_pos: Vector2 = _center + Vector2(pos3d.x, -pos3d.y) * _au_to_px
@@ -293,7 +314,7 @@ func _select(idx: int) -> void:
 
 func _select_next() -> void:
 	if _selected == -1:
-		_select(2)  # 地球
+		_select(AstroPlanets.Planet.EARTH)
 		return
 	var idx: int = SELECT_ORDER.find(_selected)
 	if idx < SELECT_ORDER.size() - 1:
@@ -302,7 +323,7 @@ func _select_next() -> void:
 
 func _select_prev() -> void:
 	if _selected == -1:
-		_select(2)  # 地球
+		_select(AstroPlanets.Planet.EARTH)
 		return
 	var idx: int = SELECT_ORDER.find(_selected)
 	if idx > 0:
@@ -343,7 +364,7 @@ func _update_info_panel() -> void:
 		info_label.text = text
 		return
 
-	if _selected < 0 or _selected > 7:
+	if _selected < 0 or _selected >= PLANET_COUNT:
 		return
 
 	var body_name: String = PLANET_NAMES[_selected]
