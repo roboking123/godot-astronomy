@@ -234,10 +234,9 @@ static func geo_moon(time: AstroTime.Moment) -> AstroMoon.GeoMoonResult:
 		dist_au * sin(m.lat_rad),
 	)
 
-	# Meeus gives mean equinox of date → use mean obliquity
+	# Meeus 用平均黃道 → 用平均傾角轉赤道，回傳也填 mobl 保持一致
 	var tilt: AstroCoords.Tilt = AstroCoords.e_tilt(time)
-	var mobl: float = tilt.mobl
-	var equ: Vector3 = AstroCoords._ecl2equ_vec(mobl, gepos)
+	var equ: Vector3 = AstroCoords._ecl2equ_vec(tilt.mobl, gepos)
 
 	# Of-date mean equatorial → J2000 (reverse precession)
 	var prec: Array[float] = AstroCoords.precession_rot(time.tt, AstroCoords.INTO_2000)
@@ -251,7 +250,7 @@ static func geo_moon(time: AstroTime.Moment) -> AstroMoon.GeoMoonResult:
 	var result: AstroMoon.GeoMoonResult = AstroMoon.GeoMoonResult.new()
 	result.j2000 = AstroCoords.rotate(equ, prec)
 	result.ecliptic = ecl
-	result.tobl = tilt.tobl
+	result.tobl = tilt.mobl
 	return result
 
 

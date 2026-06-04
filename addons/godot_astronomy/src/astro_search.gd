@@ -157,7 +157,7 @@ static func search_moon_phase(
 ## Compute moon ecliptic longitude offset from target phase angle.
 ## Returns value in [-180, +180).
 static func _moon_offset(target_lon: float, time: AstroTime.Moment) -> float:
-	var phase: float = AstroEngine._moon_phase(
+	var phase: float = AstroEngine.moon_phase(
 		AstroSun.sun_position(time),
 		AstroMoon.geo_moon(time).j2000,
 		time
@@ -262,8 +262,17 @@ static func _altdiff(
 			geo_pos = mr.j2000
 			dist = geo_pos.length()
 		_:
-			# Body enum: MERCURY=2, VENUS=3, ... maps to AstroPlanets.Planet: MERCURY=0, VENUS=1, ...
-			geo_pos = AstroPlanets.geo_position(AstroPlanets.Planet.values()[body - 2], time)
+			# Body→Planet 對應表（Body 沒有 EARTH，Planet 有）
+			var _BODY_TO_PLANET: Dictionary = {
+				Body.MERCURY: AstroPlanets.Planet.MERCURY,
+				Body.VENUS: AstroPlanets.Planet.VENUS,
+				Body.MARS: AstroPlanets.Planet.MARS,
+				Body.JUPITER: AstroPlanets.Planet.JUPITER,
+				Body.SATURN: AstroPlanets.Planet.SATURN,
+				Body.URANUS: AstroPlanets.Planet.URANUS,
+				Body.NEPTUNE: AstroPlanets.Planet.NEPTUNE,
+			}
+			geo_pos = AstroPlanets.geo_position(_BODY_TO_PLANET[body] as AstroPlanets.Planet, time)
 			dist = geo_pos.length()
 
 	# Topocentric correction — subtract observer position from geocentric

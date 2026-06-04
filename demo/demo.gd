@@ -25,7 +25,7 @@ func _process(delta: float) -> void:
 
 
 func _update_display() -> void:
-	var now: Dictionary = Time.get_datetime_dict_from_system()
+	var now: Dictionary = Time.get_datetime_dict_from_system(true)
 	var result: AstroEngine.CelestialResult = AstroEngine.compute(
 		now.year, now.month, now.day,
 		now.hour, now.minute, float(now.second),
@@ -49,7 +49,7 @@ func _update_display() -> void:
 	text += "  Altitude: %.2f°\n" % result.moon_alt
 	text += "  Distance: %.1f km\n" % result.moon_dist_km
 	text += "  Apparent diameter: %.4f°\n" % result.moon_diam_deg
-	text += "  Phase: %.1f° (%s)\n\n" % [result.moon_phase_deg, _phase_name(result.moon_phase_deg)]
+	text += "  Phase: %.1f° (%s)\n\n" % [result.moon_phase_deg, CelestialState.phase_name(result.moon_phase_deg)]
 
 	text += "[b]⏱ Sidereal[/b]\n"
 	text += "  GAST: %.4f h\n\n" % result.sidereal_time
@@ -76,26 +76,6 @@ func _update_display() -> void:
 
 	output_label.text = text
 
-
-func _phase_name(phase_deg: float) -> String:
-	if phase_deg < 22.5:
-		return "New Moon"
-	elif phase_deg < 67.5:
-		return "Waxing Crescent"
-	elif phase_deg < 112.5:
-		return "First Quarter"
-	elif phase_deg < 157.5:
-		return "Waxing Gibbous"
-	elif phase_deg < 202.5:
-		return "Full Moon"
-	elif phase_deg < 247.5:
-		return "Waning Gibbous"
-	elif phase_deg < 292.5:
-		return "Last Quarter"
-	elif phase_deg < 337.5:
-		return "Waning Crescent"
-	else:
-		return "New Moon"
 
 
 func _on_update_button_pressed() -> void:

@@ -296,7 +296,9 @@ func _run_riseset_tests() -> void:
 				max_err_min = err_min
 				worst_event = "%s %s %s" % [body_name, rs, iso]
 		else:
-			_section_passed += 1  # cosinekitty data might expect no-find in some cases
+			if _section_total - _section_passed <= 5:
+				print("     FAIL %s %s %s (lon=%d lat=%d): not found" % [
+					body_name, rs, iso, lon, lat])
 
 	var mark: String = "✓" if _section_passed == _section_total else "✗"
 	print("   %s Rise/Set: %d/%d (max err: %.2f min, worst: %s)" % [

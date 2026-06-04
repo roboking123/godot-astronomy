@@ -39,7 +39,7 @@ var planet_altitudes: Dictionary   ## { "Mercury": float, ... }
 
 
 ## Altitude → unit direction vector (Y-up world space, Z-north, X-east)
-static func _az_alt_to_direction(az_deg: float, alt_deg: float) -> Vector3:
+static func az_alt_to_direction(az_deg: float, alt_deg: float) -> Vector3:
 	var az_rad: float = deg_to_rad(az_deg)
 	var alt_rad: float = deg_to_rad(alt_deg)
 	var cos_alt: float = cos(alt_rad)
@@ -52,7 +52,7 @@ static func _az_alt_to_direction(az_deg: float, alt_deg: float) -> Vector3:
 
 
 ## Sun altitude → suggested energy (smooth ramp through twilight)
-static func _altitude_to_energy(alt_deg: float) -> float:
+static func altitude_to_energy(alt_deg: float) -> float:
 	if alt_deg >= 10.0:
 		return 1.0
 	if alt_deg <= -18.0:
@@ -62,7 +62,7 @@ static func _altitude_to_energy(alt_deg: float) -> float:
 
 
 ## Sun altitude → sky darkness (inverse of energy, 0=bright 1=dark)
-static func _altitude_to_darkness(alt_deg: float) -> float:
+static func altitude_to_darkness(alt_deg: float) -> float:
 	if alt_deg >= 0.0:
 		return 0.0
 	if alt_deg <= -18.0:
@@ -71,7 +71,7 @@ static func _altitude_to_darkness(alt_deg: float) -> float:
 
 
 ## Moon phase degrees → human-readable name
-static func _phase_name(phase_deg: float) -> String:
+static func phase_name(phase_deg: float) -> String:
 	if phase_deg < 11.25:
 		return "New Moon"
 	if phase_deg < 78.75:
@@ -92,5 +92,5 @@ static func _phase_name(phase_deg: float) -> String:
 
 
 ## Moon phase → illumination fraction (0~1)
-static func _phase_to_illumination(phase_deg: float) -> float:
+static func phase_to_illumination(phase_deg: float) -> float:
 	return (1.0 - cos(deg_to_rad(phase_deg))) / 2.0

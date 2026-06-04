@@ -56,7 +56,7 @@ static func compute(
 	var lib: AstroMoon.LibrationResult = AstroMoon.libration(time, geo.ecliptic, geo.tobl)
 
 	# ── Moon phase (requires true ecliptic of-date coordinates) ──
-	var phase: float = _moon_phase(sun_j2000, moon_j2000, time)
+	var phase: float = moon_phase(sun_j2000, moon_j2000, time)
 
 	var r := CelestialResult.new()
 	r.sun_az = sun_hor.azimuth
@@ -81,7 +81,7 @@ static func compute(
 
 ## Moon phase = moon true ecliptic longitude - sun true ecliptic longitude (of-date ECT)
 ## Placed here to avoid cross-module dependency AstroMoon -> AstroSun
-static func _moon_phase(
+static func moon_phase(
 	sun_j2000: Vector3, moon_j2000: Vector3, time: AstroTime.Moment
 ) -> float:
 	var sun_ecl: AstroCoords.EclipticCoord = AstroCoords.ecliptic(sun_j2000, time)

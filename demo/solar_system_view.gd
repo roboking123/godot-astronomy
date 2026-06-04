@@ -21,6 +21,10 @@ const PLANET_RADII_PX: Array[float] = [
 ]
 const SUN_RADIUS_PX: float = 14.0
 
+# 選擇 ID：0-7 = AstroPlanets.Planet enum, 加上太陽和月球
+const ID_SUN: int = 8
+const ID_MOON: int = 9
+
 const ORBIT_PERIODS_DAYS: Array[float] = [
 	87.97, 224.70, 365.25, 686.97, 4332.59, 10759.22, 30688.5, 60182.0
 ]
@@ -41,20 +45,22 @@ const SPEED_NAMES: Array[String] = ["Paused", "1 day/sec", "1 week/sec", "1 mont
 var _planet_positions: Array[Vector3] = []
 var _moon_pos: Vector3
 const MOON_RADIUS_PX: float = 2.0
+const MOON_ORBIT_AU: float = 0.00257  # 月球平均軌道半徑（AU）
+const MOON_VISIBLE_PX: float = 8.0    # 月球軌道需達此像素才畫
 const MOON_COLOR: Color = Color(0.75, 0.75, 0.8)
 var _current_time: AstroTime.Moment
 var _orbit_points: Array = []  # Array[PackedVector2Array]
 var _orbit_base_pos: Array = []  # 烘焙時的行星位置（Vector2）
 var _moon_orbit_points: PackedVector2Array
 
-var _selected: int = -1  # -1=無, 0-7=行星, 8=太陽, 9=月球
+var _selected: int = -1  # -1=無, 0-7=AstroPlanets.Planet, ID_SUN, ID_MOON
 var _focus_offset: Vector2 = Vector2.ZERO
 const FOCUS_ZOOM: Dictionary = {
 	0: 3000.0, 1: 1500.0, 2: 5000.0, 3: 1000.0,
-	4: 200.0, 5: 120.0, 6: 60.0, 7: 40.0, 8: 800.0, 9: 15000.0
+	4: 200.0, 5: 120.0, 6: 60.0, 7: 40.0, ID_SUN: 800.0, ID_MOON: 15000.0
 }
 # 內→外順序：太陽、水星、金星、地球、月球、火星～海王星
-const SELECT_ORDER: Array[int] = [8, 0, 1, 2, 9, 3, 4, 5, 6, 7]
+const SELECT_ORDER: Array[int] = [ID_SUN, 0, 1, 2, ID_MOON, 3, 4, 5, 6, 7]
 
 
 func _ready() -> void:
@@ -74,9 +80,9 @@ func _process(delta: float) -> void:
 	if _selected >= 0 and _selected <= 7:
 		var pos: Vector3 = _planet_positions[_selected]
 		_focus_offset = -Vector2(pos.x, -pos.y) * _au_to_px
-	elif _selected == 9:
+	elif _selected == ID_MOON:
 		_focus_offset = -Vector2(_moon_pos.x, -_moon_pos.y) * _au_to_px
-	elif _selected == 8:
+	elif _selected == ID_SUN:
 		_focus_offset = Vector2.ZERO
 	else:
 		_focus_offset = Vector2.ZERO
@@ -142,7 +148,7 @@ func _draw() -> void:
 
 	# Draw Sun
 	draw_circle(_center, SUN_RADIUS_PX, Color(1.0, 0.9, 0.3))
-	if _selected == 8:
+	if _selected == ID_SUN:
 		_draw_selection_bracket(_center, SUN_RADIUS_PX + 6)
 
 	# Draw planets
@@ -172,8 +178,8 @@ func _draw() -> void:
 		draw_line(_center, screen_pos, Color(color, 0.2), 1.0)
 
 	# 月球（放大到可見或選中時才畫）
-	var moon_real_px: float = 0.00257 * _au_to_px
-	if moon_real_px > 8.0 or _selected == 9:
+	var moon_real_px: float = MOON_ORBIT_AU * _au_to_px
+	if moon_real_px > MOON_VISIBLE_PX or _selected == ID_MOON:
 		var earth_screen: Vector2 = _center + Vector2(
 			_planet_positions[AstroPlanets.Planet.EARTH].x,
 			-_planet_positions[AstroPlanets.Planet.EARTH].y) * _au_to_px
@@ -185,7 +191,7 @@ func _draw() -> void:
 				moon_scaled[j] = _center + _moon_orbit_points[j] * _au_to_px
 			draw_polyline(moon_scaled, Color(MOON_COLOR, 0.3), 1.0, true)
 		draw_line(earth_screen, moon_screen, Color(MOON_COLOR, 0.3), 1.0)
-		if _selected == 9:
+		if _selected == ID_MOON:
 			_draw_selection_bracket(moon_screen, MOON_RADIUS_PX + 6)
 		draw_circle(moon_screen, MOON_RADIUS_PX, MOON_COLOR)
 		draw_string(ThemeDB.fallback_font, moon_screen + Vector2(4, -4),
@@ -259,12 +265,12 @@ func _draw_selection_bracket(center: Vector2, half: float) -> void:
 func _try_select(click_pos: Vector2) -> void:
 	# 月球（可見時）
 	var moon_screen: Vector2 = _center + Vector2(_moon_pos.x, -_moon_pos.y) * _au_to_px
-	if (0.00257 * _au_to_px > 8.0 or _selected == 9) and click_pos.distance_to(moon_screen) < MOON_RADIUS_PX + 12:
-		_select(9)
+	if (MOON_ORBIT_AU * _au_to_px > MOON_VISIBLE_PX or _selected == ID_MOON) and click_pos.distance_to(moon_screen) < MOON_RADIUS_PX + 12:
+		_select(ID_MOON)
 		return
 	# 太陽
 	if click_pos.distance_to(_center) < SUN_RADIUS_PX + 10:
-		_select(8)
+		_select(ID_SUN)
 		return
 	# 行星
 	var max_orbit: int = 8
@@ -313,21 +319,21 @@ func _deselect() -> void:
 func _update_info_panel() -> void:
 	var text: String = ""
 
-	if _selected == 8:
+	if _selected == ID_SUN:
 		text += "[b]Sun[/b]\n\n"
 		text += "Type: G2V Main Sequence\n"
 		text += "Distance from Earth: %.4f AU\n" % _planet_positions[AstroPlanets.Planet.EARTH].length()
 		info_label.text = text
 		return
 
-	if _selected == 9:
+	if _selected == ID_MOON:
 		var geo_moon: AstroMoon.GeoMoonResult = AstroMoon.geo_moon(_current_time)
 		var lib: AstroMoon.LibrationResult = AstroMoon.libration(
 			_current_time, geo_moon.ecliptic, geo_moon.tobl)
 		var sun_j2000: Vector3 = AstroSun.sun_position(_current_time)
-		var phase: float = AstroEngine._moon_phase(sun_j2000, geo_moon.j2000, _current_time)
-		var phase_name: String = CelestialState._phase_name(phase)
-		var illum: float = CelestialState._phase_to_illumination(phase)
+		var phase: float = AstroEngine.moon_phase(sun_j2000, geo_moon.j2000, _current_time)
+		var phase_name: String = CelestialState.phase_name(phase)
+		var illum: float = CelestialState.phase_to_illumination(phase)
 		text += "[b]Moon[/b]\n\n"
 		text += "Phase: %s (%.0f°)\n" % [phase_name, phase]
 		text += "Illumination: %.0f%%\n" % (illum * 100.0)
@@ -340,7 +346,7 @@ func _update_info_panel() -> void:
 	if _selected < 0 or _selected > 7:
 		return
 
-	var name: String = PLANET_NAMES[_selected]
+	var body_name: String = PLANET_NAMES[_selected]
 	var pos: Vector3 = _planet_positions[_selected]
 	var helio_dist: float = pos.length()
 
@@ -349,12 +355,8 @@ func _update_info_panel() -> void:
 	var geo_dist: float = (pos - earth_pos).length()
 
 	# 從地球觀測的方位角/高度角（台北預設）
+	var now_dict: Dictionary = Time.get_datetime_dict_from_system(true)
 	var hor: AstroCoords.HorizonCoord = AstroPlanets.planet_horizon(
-		_selected as AstroPlanets.Planet,
-		0, 0, 0, 0, 0, 0.0, 25.03, 121.56)
-	# 用實際時間重算
-	var now_dict: Dictionary = Time.get_datetime_dict_from_system()
-	hor = AstroPlanets.planet_horizon(
 		_selected as AstroPlanets.Planet,
 		now_dict.year, now_dict.month, now_dict.day,
 		now_dict.hour, now_dict.minute, float(now_dict.second),
@@ -362,7 +364,7 @@ func _update_info_panel() -> void:
 
 	var above: String = "Yes" if hor.altitude > 0.0 else "No"
 
-	text += "[b]%s[/b]\n\n" % name
+	text += "[b]%s[/b]\n\n" % body_name
 	text += "Distance from Sun: %.4f AU\n" % helio_dist
 	text += "Distance from Earth: %.4f AU\n" % geo_dist
 	text += "Orbital period: %.1f days\n\n" % ORBIT_PERIODS_DAYS[_selected]
@@ -377,9 +379,9 @@ func _update_info_panel() -> void:
 		var lib: AstroMoon.LibrationResult = AstroMoon.libration(
 			_current_time, geo_moon.ecliptic, geo_moon.tobl)
 		var sun_j2000: Vector3 = AstroSun.sun_position(_current_time)
-		var phase: float = AstroEngine._moon_phase(sun_j2000, geo_moon.j2000, _current_time)
-		var phase_name: String = CelestialState._phase_name(phase)
-		var illum: float = CelestialState._phase_to_illumination(phase)
+		var phase: float = AstroEngine.moon_phase(sun_j2000, geo_moon.j2000, _current_time)
+		var phase_name: String = CelestialState.phase_name(phase)
+		var illum: float = CelestialState.phase_to_illumination(phase)
 
 		text += "\n[b]Moon[/b]\n"
 		text += "Phase: %s (%.0f°)\n" % [phase_name, phase]

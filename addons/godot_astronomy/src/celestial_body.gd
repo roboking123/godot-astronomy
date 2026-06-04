@@ -167,7 +167,7 @@ func _reset_base_time() -> void:
 
 func _current_ut() -> float:
 	if use_system_time:
-		var now: Dictionary = Time.get_datetime_dict_from_system()
+		var now: Dictionary = Time.get_datetime_dict_from_system(true)
 		var sys_time: AstroTime.Moment = AstroTime.make_time(
 			now.year, now.month, now.day,
 			now.hour, now.minute, float(now.second)
@@ -191,8 +191,8 @@ func _update_state() -> void:
 	s.sun_azimuth = sun_hor.azimuth
 	s.sun_altitude = sun_hor.altitude
 	s.sun_distance_au = sun_j2000.length()
-	s.sun_direction = CelestialState._az_alt_to_direction(sun_hor.azimuth, sun_hor.altitude)
-	s.sun_energy = CelestialState._altitude_to_energy(sun_hor.altitude)
+	s.sun_direction = CelestialState.az_alt_to_direction(sun_hor.azimuth, sun_hor.altitude)
+	s.sun_energy = CelestialState.altitude_to_energy(sun_hor.altitude)
 
 	# ── Moon ──
 	var geo: AstroMoon.GeoMoonResult = AstroMoon.geo_moon(time)
@@ -206,12 +206,12 @@ func _update_state() -> void:
 	s.moon_altitude = moon_hor.altitude
 	s.moon_distance_km = lib.dist_km
 	s.moon_diameter_deg = lib.diam_deg
-	s.moon_direction = CelestialState._az_alt_to_direction(moon_hor.azimuth, moon_hor.altitude)
+	s.moon_direction = CelestialState.az_alt_to_direction(moon_hor.azimuth, moon_hor.altitude)
 
-	var phase: float = AstroEngine._moon_phase(sun_j2000, geo.j2000, time)
+	var phase: float = AstroEngine.moon_phase(sun_j2000, geo.j2000, time)
 	s.moon_phase_deg = phase
-	s.moon_phase_name = CelestialState._phase_name(phase)
-	s.moon_illumination = CelestialState._phase_to_illumination(phase)
+	s.moon_phase_name = CelestialState.phase_name(phase)
+	s.moon_illumination = CelestialState.phase_to_illumination(phase)
 
 	# ── Sky condition ──
 	s.is_day = sun_hor.altitude > 0.0
@@ -219,7 +219,7 @@ func _update_state() -> void:
 	s.is_nautical_twilight = sun_hor.altitude <= -6.0 and sun_hor.altitude > -12.0
 	s.is_astronomical_twilight = sun_hor.altitude <= -12.0 and sun_hor.altitude > -18.0
 	s.is_night = sun_hor.altitude <= -18.0
-	s.sky_darkness = CelestialState._altitude_to_darkness(sun_hor.altitude)
+	s.sky_darkness = CelestialState.altitude_to_darkness(sun_hor.altitude)
 
 	# ── Time ──
 	s.sidereal_time = AstroCoords.sidereal_time(time)
@@ -236,7 +236,7 @@ func _update_state() -> void:
 			var po: Vector3 = AstroCoords.j2000_to_ofdate(pt, time)
 			var prd: AstroCoords.RaDec = AstroCoords.vector2radec(po)
 			var phor: AstroCoords.HorizonCoord = AstroCoords.horizon(time, latitude, longitude, prd.ra, prd.dec)
-			s.planet_directions[_PLANET_NAMES[i]] = CelestialState._az_alt_to_direction(phor.azimuth, phor.altitude)
+			s.planet_directions[_PLANET_NAMES[i]] = CelestialState.az_alt_to_direction(phor.azimuth, phor.altitude)
 			s.planet_altitudes[_PLANET_NAMES[i]] = phor.altitude
 
 	# ── Signals ──
