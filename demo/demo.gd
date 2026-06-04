@@ -1,0 +1,82 @@
+extends Control
+
+@onready var output_label: RichTextLabel = %OutputLabel
+@onready var lat_input: SpinBox = %LatInput
+@onready var lon_input: SpinBox = %LonInput
+@onready var use_system_time: CheckBox = %UseSystemTime
+
+var _update_interval: float = 1.0
+var _timer: float = 0.0
+
+
+func _ready() -> void:
+	lat_input.value = 25.033  # Taipei
+	lon_input.value = 121.565
+	_update_display()
+
+
+func _process(delta: float) -> void:
+	if not use_system_time.button_pressed:
+		return
+	_timer += delta
+	if _timer >= _update_interval:
+		_timer = 0.0
+		_update_display()
+
+
+func _update_display() -> void:
+	var now: Dictionary = Time.get_datetime_dict_from_system()
+	var result: AstroEngine.CelestialResult = AstroEngine.compute(
+		now.year, now.month, now.day,
+		now.hour, now.minute, float(now.second),
+		lat_input.value, lon_input.value
+	)
+
+	var text: String = ""
+	text += "[b]Godot Astronomy — Live Demo[/b]\n"
+	text += "─────────────────────────────\n"
+	text += "Time (UTC): %04d-%02d-%02d %02d:%02d:%02d\n" % [
+		now.year, now.month, now.day, now.hour, now.minute, now.second]
+	text += "Location: %.3f°N, %.3f°E\n\n" % [lat_input.value, lon_input.value]
+
+	text += "[b]☀ Sun[/b]\n"
+	text += "  Azimuth:  %.2f°\n" % result.sun_az
+	text += "  Altitude: %.2f°\n" % result.sun_alt
+	text += "  Distance: %.6f AU\n\n" % result.sun_dist
+
+	text += "[b]☽ Moon[/b]\n"
+	text += "  Azimuth:  %.2f°\n" % result.moon_az
+	text += "  Altitude: %.2f°\n" % result.moon_alt
+	text += "  Distance: %.1f km\n" % result.moon_dist_km
+	text += "  Apparent diameter: %.4f°\n" % result.moon_diam_deg
+	text += "  Phase: %.1f° (%s)\n\n" % [result.moon_phase_deg, _phase_name(result.moon_phase_deg)]
+
+	text += "[b]⏱ Sidereal[/b]\n"
+	text += "  GAST: %.4f h\n" % result.sidereal_time
+
+	output_label.text = text
+
+
+func _phase_name(phase_deg: float) -> String:
+	if phase_deg < 22.5:
+		return "New Moon"
+	elif phase_deg < 67.5:
+		return "Waxing Crescent"
+	elif phase_deg < 112.5:
+		return "First Quarter"
+	elif phase_deg < 157.5:
+		return "Waxing Gibbous"
+	elif phase_deg < 202.5:
+		return "Full Moon"
+	elif phase_deg < 247.5:
+		return "Waning Gibbous"
+	elif phase_deg < 292.5:
+		return "Last Quarter"
+	elif phase_deg < 337.5:
+		return "Waning Crescent"
+	else:
+		return "New Moon"
+
+
+func _on_update_button_pressed() -> void:
+	_update_display()
