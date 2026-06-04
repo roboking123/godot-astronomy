@@ -20,6 +20,24 @@ print(r.moon_dist_km)    # Moon distance (km)
 
 Or use the **CelestialBody** node — add it to your scene and it updates every frame automatically, creating sun/moon lights for you.
 
+## Common Recipes
+
+See [`demo/examples.gd`](demo/examples.gd) for runnable code — execute with:
+
+```bash
+godot --headless -s demo/examples.gd
+```
+
+| Recipe | What it does |
+|--------|-------------|
+| Example 1 | Sun position (azimuth + altitude) for a given time and location |
+| Example 2 | Today's sunrise / sunset time + daylight hours |
+| Example 3 | Moon distance, phase, illumination percentage |
+| Example 4 | Planet positions (Mars, Jupiter, Saturn) above/below horizon |
+| Example 5 | Next full moon / new moon date |
+| Example 6 | `AstroEngine.compute()` — one call gets everything |
+| Example 7 | Utility: azimuth → Godot Vector3, altitude → light energy |
+
 ---
 
 ## API Reference
@@ -214,6 +232,7 @@ Same algorithms as [cosinekitty/astronomy](https://github.com/cosinekitty/astron
 
 | Scene | Description |
 |-------|-------------|
+| `demo/examples.gd` | **Start here** — 7 common recipes, runs headless, copy-paste ready |
 | `demo/solar_system_view.tscn` | Top-down solar system with real VSOP87 orbits (default main scene) |
 | `demo/day_night_demo.tscn` | 3D sky with sun/moon/planets, free camera, Rayleigh scattering |
 | `demo/demo.tscn` | Text output showing all computed values |
