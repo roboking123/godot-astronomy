@@ -15,6 +15,9 @@ Compute real-world sun and moon positions for any date, time, and location on Ea
 - **Nutation & precession** — IAU2000b truncated model + 5th-order precession
 - **Sidereal time** — GAST with equation of the equinoxes
 - **Observer position** — WGS84 ellipsoid, topocentric parallax correction
+- **Planets** — Mercury through Neptune heliocentric and geocentric positions
+- **Rise/set search** — find sunrise, moonrise, planet rise/set times
+- **Moon phase search** — find next new moon, full moon, or any phase angle
 - **Pure GDScript** — no native extensions, no dependencies, works on all platforms
 
 ## Quick Start
@@ -26,6 +29,34 @@ var result = AstroEngine.compute(2026, 6, 4, 14, 30, 0.0, 25.033, 121.565)
 print("Sun altitude: ", result.sun_alt)      # degrees above horizon
 print("Moon phase: ", result.moon_phase_deg)  # 0=new, 180=full
 print("Moon distance: ", result.moon_dist_km) # km
+```
+
+### Planets
+
+```gdscript
+# Where is Mars right now?
+var time = AstroTime.make_time(2026, 6, 4, 14, 30, 0.0)
+var mars_pos = AstroPlanets.helio_position(AstroPlanets.Planet.MARS, time)
+print("Mars heliocentric: ", mars_pos, " AU")
+
+# Mars horizon coordinates for Taipei
+var mars_hor = AstroPlanets.planet_horizon(
+    AstroPlanets.Planet.MARS, 2026, 6, 4, 14, 30, 0.0, 25.033, 121.565)
+print("Mars altitude: ", mars_hor.altitude)
+```
+
+### Rise/Set and Moon Phase Search
+
+```gdscript
+var time = AstroTime.make_time(2026, 6, 4, 0, 0, 0.0)
+
+# Find next sunrise in Taipei
+var sunrise = AstroSearch.search_rise_set(
+    AstroSearch.Body.SUN, AstroSearch.Direction.RISE,
+    25.033, 121.565, 0.0, time, 1.0)
+
+# Find next full moon within 30 days
+var full_moon = AstroSearch.search_moon_phase(180.0, time, 30.0)
 ```
 
 ### CelestialResult fields
@@ -89,7 +120,9 @@ addons/godot_astronomy/src/
 ├── astro_time.gd      # Time system, Julian Day, Delta T, constants
 ├── astro_sun.gd       # VSOP87 sun position
 ├── astro_moon.gd      # CalcMoon moon position + libration
+├── astro_planets.gd   # VSOP87 planets (Mercury–Neptune)
 ├── astro_coords.gd    # Coordinate transforms, nutation, precession
+├── astro_search.gd    # Event search (rise/set, moon phase)
 └── astro_engine.gd    # Facade — one call does everything
 ```
 
@@ -105,8 +138,10 @@ This port implements the same algorithms as [cosinekitty/astronomy](https://gith
 
 ## Roadmap
 
-- [ ] Planets (Mercury through Neptune via VSOP87)
-- [ ] Rise/set/transit search
+- [x] Planets (Mercury through Neptune via VSOP87)
+- [x] Rise/set search
+- [x] Moon phase search
+- [ ] Transit search
 - [ ] Eclipse prediction
 - [ ] Elongation, conjunction, opposition
 - [ ] Visual magnitude
