@@ -8,11 +8,11 @@ func _init() -> void:
 	print("═══════════════════════════════════════════════════")
 
 	var locations: Array[Dictionary] = [
-		{"name": "Taipei", "lat": 25.03, "lon": 121.56},
-		{"name": "New York", "lat": 40.71, "lon": -74.01},
-		{"name": "London", "lat": 51.51, "lon": -0.13},
-		{"name": "Sydney", "lat": -33.87, "lon": 151.21},
-		{"name": "North Pole", "lat": 89.0, "lon": 0.0},
+		{"name": "Taipei", "lon": 121.56, "lat": 25.03},
+		{"name": "New York", "lon": -74.01, "lat": 40.71},
+		{"name": "London", "lon": -0.13, "lat": 51.51},
+		{"name": "Sydney", "lon": 151.21, "lat": -33.87},
+		{"name": "North Pole", "lon": 0.0, "lat": 89.0},
 	]
 
 	var cb: CelestialBody = CelestialBody.new()
