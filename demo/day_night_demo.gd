@@ -103,7 +103,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_SPACE:
 				celestial.paused = not celestial.paused
 			KEY_R:
-				celestial._elapsed_days = 0.0
+				celestial.set_datetime(2026, 1, 1, 12, 0, 0.0)
 				celestial.use_system_time = true
 			KEY_1:
 				_set_scale(0)

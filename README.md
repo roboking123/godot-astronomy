@@ -111,7 +111,7 @@ var horizon = AstroCoords.horizon(time, 25.033, 121.565, radec.ra, radec.dec)
 git clone https://github.com/roboking123/godot-astronomy.git
 ```
 
-Open in Godot 4.4+ and run the demo scene.
+Open in Godot 4.6+ and run the demo scene.
 
 ## Architecture
 

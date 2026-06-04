@@ -114,7 +114,7 @@ func _process(delta: float) -> void:
 
 
 func _update_positions() -> void:
-	var now: Dictionary = Time.get_datetime_dict_from_system()
+	var now: Dictionary = Time.get_datetime_dict_from_system(true)
 	_current_time = AstroTime.make_time(
 		now.year, now.month, now.day,
 		now.hour, now.minute, float(now.second))
