@@ -33,6 +33,10 @@ const ORBIT_PERIODS_DAYS: Array[float] = [
 ]
 const ORBIT_SAMPLES: int = 180
 
+# 資訊面板的觀測地點（改這兩個值就能換地點）
+const OBSERVER_LAT: float = 25.03
+const OBSERVER_LON: float = 121.56
+
 @onready var date_label: Label = %DateLabel
 @onready var info_panel: PanelContainer = %InfoPanel
 @onready var info_label: RichTextLabel = %InfoLabel
@@ -55,6 +59,8 @@ var _current_time: AstroTime.Moment
 var _orbit_points: Array = []  # Array[PackedVector2Array]
 var _orbit_base_pos: Array = []  # 烘焙時的行星位置（Vector2）
 var _moon_orbit_points: PackedVector2Array
+var _rebake_cooldown: float = 0.0
+const REBAKE_MIN_INTERVAL: float = 0.25  # 最短重烘焙間隔（秒）
 
 var _selected: int = -1  # -1=無, 其餘用 Body enum
 var _focus_offset: Vector2 = Vector2.ZERO
@@ -96,17 +102,20 @@ func _process(delta: float) -> void:
 		_focus_offset = Vector2.ZERO
 	_center = size / 2.0 + _focus_offset
 
-	# 任何行星在螢幕上偏離軌道超過 2 像素就重烘焙
-	var needs_rebake: bool = false
-	for i: int in PLANET_COUNT:
-		var pos3d: Vector3 = _planet_positions[i]
-		var cur_2d: Vector2 = Vector2(pos3d.x, -pos3d.y)
-		var base: Vector2 = _orbit_base_pos[i] as Vector2
-		if (cur_2d - base).length() * _au_to_px > 2.0:
-			needs_rebake = true
-			break
-	if needs_rebake:
-		_bake_orbits()
+	# 任何行星在螢幕上偏離軌道超過 2 像素就重烘焙（有冷卻時間）
+	_rebake_cooldown -= delta
+	if _rebake_cooldown <= 0.0:
+		var needs_rebake: bool = false
+		for i: int in PLANET_COUNT:
+			var pos3d: Vector3 = _planet_positions[i]
+			var cur_2d: Vector2 = Vector2(pos3d.x, -pos3d.y)
+			var base: Vector2 = _orbit_base_pos[i] as Vector2
+			if (cur_2d - base).length() * _au_to_px > 2.0:
+				needs_rebake = true
+				break
+		if needs_rebake:
+			_bake_orbits()
+			_rebake_cooldown = REBAKE_MIN_INTERVAL
 
 	if _selected >= 0:
 		_update_info_panel()
@@ -363,13 +372,12 @@ func _update_info_panel() -> void:
 	var earth_pos: Vector3 = _planet_positions[Body.EARTH]
 	var geo_dist: float = (pos - earth_pos).length()
 
-	# 從地球觀測的方位角/高度角（台北預設）
 	var now_dict: Dictionary = Time.get_datetime_dict_from_system(true)
 	var hor: AstroCoords.HorizonCoord = AstroPlanets.planet_horizon(
 		_selected as AstroPlanets.Planet,
 		now_dict.year, now_dict.month, now_dict.day,
 		now_dict.hour, now_dict.minute, float(now_dict.second),
-		25.03, 121.56)
+		OBSERVER_LAT, OBSERVER_LON)
 
 	var above: String = "Yes" if hor.altitude > 0.0 else "No"
 
@@ -377,7 +385,7 @@ func _update_info_panel() -> void:
 	text += "Distance from Sun: %.4f AU\n" % helio_dist
 	text += "Distance from Earth: %.4f AU\n" % geo_dist
 	text += "Orbital period: %.1f days\n\n" % ORBIT_PERIODS_DAYS[_selected]
-	text += "[b]From Taipei (25°N, 121°E)[/b]\n"
+	text += "[b]From %.1f°N, %.1f°E[/b]\n" % [OBSERVER_LAT, OBSERVER_LON]
 	text += "Azimuth: %.1f°\n" % hor.azimuth
 	text += "Altitude: %.1f°\n" % hor.altitude
 	text += "Above horizon: %s\n" % above
