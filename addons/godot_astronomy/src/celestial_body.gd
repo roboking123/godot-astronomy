@@ -1,8 +1,8 @@
 @tool
 class_name CelestialBody
-## Main astronomy node — set location and time, get sky data every frame.
-## Drop into your scene, assign lights, done.
-extends Node
+## Main astronomy node — add to scene, everything works automatically.
+## Creates sun and moon lights on its own. Just add this one node.
+extends Node3D
 
 # ─── Location ───
 
@@ -13,12 +13,14 @@ extends Node
 	set(v): latitude = v; _dirty = true
 @export_range(0.0, 10000.0, 1.0, "suffix:m") var elevation: float = 0.0
 
-# ─── Lighting (drag your lights here) ───
+# ─── Lighting ───
 
 @export_group("Lighting")
-## Drag a DirectionalLight3D here — it will follow the sun automatically
+## Automatically create sun and moon DirectionalLight3D nodes
+@export var auto_create_lights: bool = true
+## Or assign your own lights manually (overrides auto-create)
 @export var sun_light: DirectionalLight3D
-## Drag a DirectionalLight3D here — it will follow the moon automatically
+## Or assign your own moon light manually
 @export var moon_light: DirectionalLight3D
 ## Sun color at high altitude
 @export var sun_color_day: Color = Color(1.0, 0.95, 0.9)
@@ -90,7 +92,23 @@ var _PLANET_ENUMS: Array[int] = [0, 1, 3, 4, 5, 6, 7]
 func _ready() -> void:
 	_reset_base_time()
 	if not Engine.is_editor_hint():
+		_ensure_lights()
 		_initialized = true
+
+
+func _ensure_lights() -> void:
+	if not auto_create_lights:
+		return
+	if sun_light == null:
+		sun_light = DirectionalLight3D.new()
+		sun_light.name = "SunLight"
+		sun_light.shadow_enabled = true
+		add_child(sun_light)
+	if moon_light == null:
+		moon_light = DirectionalLight3D.new()
+		moon_light.name = "MoonLight"
+		moon_light.shadow_enabled = false
+		add_child(moon_light)
 
 
 func _process(delta: float) -> void:
