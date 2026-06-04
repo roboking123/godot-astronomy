@@ -17,37 +17,80 @@ const PLANET_NAMES: Array[String] = [
 ]
 
 const PLANET_RADII_PX: Array[float] = [
-	3.0, 5.0, 5.0, 4.0, 10.0, 9.0, 7.0, 7.0
+	3.0, 4.5, 4.5, 3.5, 8.0, 7.5, 6.0, 6.0
 ]
+const SUN_RADIUS_PX: float = 14.0
 
-const ORBIT_SEMI_MAJOR_AU: Array[float] = [
-	0.387, 0.723, 1.0, 1.524, 5.203, 9.537, 19.191, 30.069
+const ORBIT_PERIODS_DAYS: Array[float] = [
+	87.97, 224.70, 365.25, 686.97, 4332.59, 10759.22, 30688.5, 60182.0
 ]
+const ORBIT_SAMPLES: int = 180
 
 @onready var date_label: Label = %DateLabel
 @onready var zoom_slider: HSlider = %ZoomSlider
 @onready var inner_toggle: CheckBox = %InnerToggle
+@onready var info_panel: PanelContainer = %InfoPanel
+@onready var info_label: RichTextLabel = %InfoLabel
 
 var _center: Vector2
 var _au_to_px: float = 80.0
 var _show_inner_only: bool = false
 var _time_offset_days: float = 0.0
+var _time_speed: float = 0.0
+var _speed_idx: int = 0
+const TIME_SPEEDS: Array[float] = [0.0, 1.0, 7.0, 30.0, 365.0]
+const SPEED_NAMES: Array[String] = ["Paused", "1 day/sec", "1 week/sec", "1 month/sec", "1 year/sec"]
 
 var _planet_positions: Array[Vector3] = []
+var _moon_pos: Vector3
+const MOON_RADIUS_PX: float = 2.0
+const MOON_COLOR: Color = Color(0.75, 0.75, 0.8)
 var _current_time: AstroTime.Moment
+var _orbit_points: Array = []  # Array[PackedVector2Array]
+var _moon_orbit_points: PackedVector2Array
+
+var _selected: int = -1  # -1=無, 0-7=行星, 8=太陽
+var _focus_offset: Vector2 = Vector2.ZERO  # 將選中天體置中的偏移
+const FOCUS_ZOOM: Dictionary = {
+	0: 3000.0, 1: 1500.0, 2: 5000.0, 3: 1000.0,
+	4: 200.0, 5: 120.0, 6: 60.0, 7: 40.0, 8: 800.0
+}
 
 
 func _ready() -> void:
 	_planet_positions.resize(8)
+	_orbit_points.resize(8)
 	zoom_slider.value = 80.0
 	_update_positions()
+	_bake_orbits()
 
 
-func _process(_delta: float) -> void:
-	_center = size / 2.0
+var _prev_offset: float = 0.0
+
+func _process(delta: float) -> void:
 	_au_to_px = zoom_slider.value
 	_show_inner_only = inner_toggle.button_pressed
+	if _time_speed != 0.0:
+		_time_offset_days += _time_speed * delta
 	_update_positions()
+
+	# 選中天體時，將其置中
+	if _selected >= 0 and _selected <= 7:
+		var pos: Vector3 = _planet_positions[_selected]
+		_focus_offset = -Vector2(pos.x, -pos.y) * _au_to_px
+	elif _selected == 8:
+		_focus_offset = Vector2.ZERO
+	else:
+		_focus_offset = Vector2.ZERO
+	_center = size / 2.0 + _focus_offset
+
+	var needs_rebake: bool = absf(_time_offset_days - _prev_offset) > 0.5
+	if needs_rebake:
+		_bake_orbits()
+		_prev_offset = _time_offset_days
+
+	if _selected >= 0:
+		_update_info_panel()
 	queue_redraw()
 
 
@@ -65,10 +108,14 @@ func _update_positions() -> void:
 		else:
 			_planet_positions[i] = AstroPlanets.helio_position(planet, _current_time)
 
+	# 月球（地心 J2000 座標，轉日心）
+	var geo: AstroMoon.GeoMoonResult = AstroMoon.geo_moon(_current_time)
+	var earth_pos: Vector3 = _planet_positions[AstroPlanets.Planet.EARTH]
+	_moon_pos = earth_pos + geo.j2000
 	# Update date label
 	var ut: float = _current_time.ut
 	var jd: float = ut + 2451545.0
-	date_label.text = "JD: %.2f | Offset: %+.0f days" % [jd, _time_offset_days]
+	date_label.text = "JD: %.2f | Offset: %+.0f days | %s" % [jd, _time_offset_days, SPEED_NAMES[_speed_idx]]
 
 
 func _draw() -> void:
@@ -77,14 +124,21 @@ func _draw() -> void:
 
 	var max_orbit: int = 8 if not _show_inner_only else 4
 
-	# Draw orbit circles
+	# 真實軌道線（VSOP87 取樣）
 	for i: int in max_orbit:
-		var orbit_r: float = ORBIT_SEMI_MAJOR_AU[i] * _au_to_px
-		if orbit_r > 2.0 and orbit_r < maxf(size.x, size.y):
-			draw_arc(_center, orbit_r, 0, TAU, 64, Color(0.2, 0.2, 0.3, 0.5), 1.0)
+		var pts: PackedVector2Array = _orbit_points[i]
+		if pts.size() < 2:
+			continue
+		var scaled: PackedVector2Array = PackedVector2Array()
+		scaled.resize(pts.size())
+		for j: int in pts.size():
+			scaled[j] = _center + pts[j] * _au_to_px
+		draw_polyline(scaled, Color(0.2, 0.2, 0.3, 0.5), 1.0, true)
 
 	# Draw Sun
-	draw_circle(_center, 8.0, Color(1.0, 0.9, 0.3))
+	draw_circle(_center, SUN_RADIUS_PX, Color(1.0, 0.9, 0.3))
+	if _selected == 8:
+		_draw_selection_bracket(_center, SUN_RADIUS_PX + 6)
 
 	# Draw planets
 	for i: int in max_orbit:
@@ -97,6 +151,10 @@ func _draw() -> void:
 		var radius: float = PLANET_RADII_PX[i]
 		var color: Color = PLANET_COLORS[i]
 
+		# 選中高亮（四角框）
+		if i == _selected:
+			_draw_selection_bracket(screen_pos, radius + 6)
+
 		# Draw planet dot
 		draw_circle(screen_pos, radius, color)
 
@@ -108,6 +166,56 @@ func _draw() -> void:
 		# Draw line from Sun to planet
 		draw_line(_center, screen_pos, Color(color, 0.2), 1.0)
 
+	# 月球（只在放大到地月系統可見時才畫）
+	var moon_real_px: float = 0.00257 * _au_to_px
+	if moon_real_px > 8.0:
+		var earth_screen: Vector2 = _center + Vector2(
+			_planet_positions[AstroPlanets.Planet.EARTH].x,
+			-_planet_positions[AstroPlanets.Planet.EARTH].y) * _au_to_px
+		var moon_screen: Vector2 = _center + Vector2(_moon_pos.x, -_moon_pos.y) * _au_to_px
+		if _moon_orbit_points.size() > 1:
+			var moon_scaled: PackedVector2Array = PackedVector2Array()
+			moon_scaled.resize(_moon_orbit_points.size())
+			for j: int in _moon_orbit_points.size():
+				moon_scaled[j] = _center + _moon_orbit_points[j] * _au_to_px
+			draw_polyline(moon_scaled, Color(MOON_COLOR, 0.3), 1.0, true)
+		draw_line(earth_screen, moon_screen, Color(MOON_COLOR, 0.3), 1.0)
+		draw_circle(moon_screen, MOON_RADIUS_PX, MOON_COLOR)
+		draw_string(ThemeDB.fallback_font, moon_screen + Vector2(4, -4),
+			"Moon", HORIZONTAL_ALIGNMENT_LEFT, -1, 9, MOON_COLOR)
+
+
+func _bake_orbits() -> void:
+	var base_ut: float = _current_time.ut
+	for i: int in 8:
+		var planet: AstroPlanets.Planet = i as AstroPlanets.Planet
+		var period: float = ORBIT_PERIODS_DAYS[i]
+		var pts: PackedVector2Array = PackedVector2Array()
+		pts.resize(ORBIT_SAMPLES + 1)
+		for j: int in ORBIT_SAMPLES + 1:
+			var t: AstroTime.Moment = AstroTime.time_from_days(
+				base_ut + period * float(j) / float(ORBIT_SAMPLES))
+			var pos: Vector3
+			if planet == AstroPlanets.Planet.EARTH:
+				pos = -AstroSun.sun_position(t)
+			else:
+				pos = AstroPlanets.helio_position(planet, t)
+			pts[j] = Vector2(pos.x, -pos.y)
+		_orbit_points[i] = pts
+
+	# 月球軌道（過去半圈 + 未來半圈）
+	var moon_pts: PackedVector2Array = PackedVector2Array()
+	var moon_samples: int = 60
+	moon_pts.resize(moon_samples + 1)
+	for j: int in moon_samples + 1:
+		var t: AstroTime.Moment = AstroTime.time_from_days(
+			base_ut - 13.65 + 27.3 * float(j) / float(moon_samples))
+		var earth: Vector3 = -AstroSun.sun_position(t)
+		var moon_geo: AstroMoon.GeoMoonResult = AstroMoon.geo_moon(t)
+		var moon_helio: Vector3 = earth + moon_geo.j2000
+		moon_pts[j] = Vector2(moon_helio.x, -moon_helio.y)
+	_moon_orbit_points = moon_pts
+
 
 func _gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
@@ -117,6 +225,120 @@ func _gui_input(event: InputEvent) -> void:
 				zoom_slider.value *= 1.1
 			elif mb.button_index == MOUSE_BUTTON_WHEEL_DOWN:
 				zoom_slider.value /= 1.1
+			elif mb.button_index == MOUSE_BUTTON_LEFT:
+				_try_select(mb.position)
+
+
+func _draw_selection_bracket(center: Vector2, half: float) -> void:
+	var corner_len: float = half * 0.45
+	var col: Color = Color(1, 1, 1, 0.7)
+	var w: float = 1.5
+	# 左上
+	draw_line(center + Vector2(-half, -half), center + Vector2(-half + corner_len, -half), col, w)
+	draw_line(center + Vector2(-half, -half), center + Vector2(-half, -half + corner_len), col, w)
+	# 右上
+	draw_line(center + Vector2(half, -half), center + Vector2(half - corner_len, -half), col, w)
+	draw_line(center + Vector2(half, -half), center + Vector2(half, -half + corner_len), col, w)
+	# 左下
+	draw_line(center + Vector2(-half, half), center + Vector2(-half + corner_len, half), col, w)
+	draw_line(center + Vector2(-half, half), center + Vector2(-half, half - corner_len), col, w)
+	# 右下
+	draw_line(center + Vector2(half, half), center + Vector2(half - corner_len, half), col, w)
+	draw_line(center + Vector2(half, half), center + Vector2(half, half - corner_len), col, w)
+
+
+func _try_select(click_pos: Vector2) -> void:
+	# 太陽
+	if click_pos.distance_to(_center) < SUN_RADIUS_PX + 10:
+		_select(8)
+		return
+	# 行星
+	var max_orbit: int = 8 if not _show_inner_only else 4
+	for i: int in max_orbit:
+		var pos3d: Vector3 = _planet_positions[i]
+		var screen_pos: Vector2 = _center + Vector2(pos3d.x, -pos3d.y) * _au_to_px
+		if click_pos.distance_to(screen_pos) < PLANET_RADII_PX[i] + 12:
+			_select(i)
+			return
+	_deselect()
+
+
+func _select(idx: int) -> void:
+	_selected = idx
+	if FOCUS_ZOOM.has(idx):
+		zoom_slider.value = FOCUS_ZOOM[idx] as float
+	info_panel.visible = true
+	_bake_orbits()
+
+
+func _deselect() -> void:
+	_selected = -1
+	info_panel.visible = false
+	zoom_slider.value = 80.0
+	_bake_orbits()
+
+
+func _update_info_panel() -> void:
+	var text: String = ""
+
+	if _selected == 8:
+		text += "[b]Sun[/b]\n\n"
+		text += "Type: G2V Main Sequence\n"
+		text += "Distance from Earth: %.4f AU\n" % _planet_positions[AstroPlanets.Planet.EARTH].length()
+		info_label.text = text
+		return
+
+	if _selected < 0 or _selected > 7:
+		return
+
+	var name: String = PLANET_NAMES[_selected]
+	var pos: Vector3 = _planet_positions[_selected]
+	var helio_dist: float = pos.length()
+
+	# 地心距離
+	var earth_pos: Vector3 = _planet_positions[AstroPlanets.Planet.EARTH]
+	var geo_dist: float = (pos - earth_pos).length()
+
+	# 從地球觀測的方位角/高度角（台北預設）
+	var hor: AstroCoords.HorizonCoord = AstroPlanets.planet_horizon(
+		_selected as AstroPlanets.Planet,
+		0, 0, 0, 0, 0, 0.0, 25.03, 121.56)
+	# 用實際時間重算
+	var now_dict: Dictionary = Time.get_datetime_dict_from_system()
+	hor = AstroPlanets.planet_horizon(
+		_selected as AstroPlanets.Planet,
+		now_dict.year, now_dict.month, now_dict.day,
+		now_dict.hour, now_dict.minute, float(now_dict.second),
+		25.03, 121.56)
+
+	var above: String = "Yes" if hor.altitude > 0.0 else "No"
+
+	text += "[b]%s[/b]\n\n" % name
+	text += "Distance from Sun: %.4f AU\n" % helio_dist
+	text += "Distance from Earth: %.4f AU\n" % geo_dist
+	text += "Orbital period: %.1f days\n\n" % ORBIT_PERIODS_DAYS[_selected]
+	text += "[b]From Taipei (25°N, 121°E)[/b]\n"
+	text += "Azimuth: %.1f°\n" % hor.azimuth
+	text += "Altitude: %.1f°\n" % hor.altitude
+	text += "Above horizon: %s\n" % above
+
+	# 地球特有：月球資訊
+	if _selected == AstroPlanets.Planet.EARTH:
+		var geo_moon: AstroMoon.GeoMoonResult = AstroMoon.geo_moon(_current_time)
+		var lib: AstroMoon.LibrationResult = AstroMoon.libration(
+			_current_time, geo_moon.ecliptic, geo_moon.tobl)
+		var sun_j2000: Vector3 = AstroSun.sun_position(_current_time)
+		var phase: float = AstroEngine._moon_phase(sun_j2000, geo_moon.j2000, _current_time)
+		var phase_name: String = CelestialState._phase_name(phase)
+		var illum: float = CelestialState._phase_to_illumination(phase)
+
+		text += "\n[b]Moon[/b]\n"
+		text += "Phase: %s (%.0f°)\n" % [phase_name, phase]
+		text += "Illumination: %.0f%%\n" % (illum * 100.0)
+		text += "Distance: %.0f km\n" % lib.dist_km
+		text += "Apparent diameter: %.4f°\n" % lib.diam_deg
+
+	info_label.text = text
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -131,5 +353,14 @@ func _unhandled_input(event: InputEvent) -> void:
 				_time_offset_days += 30.0
 			KEY_DOWN:
 				_time_offset_days -= 30.0
+			KEY_ESCAPE:
+				_deselect()
 			KEY_HOME:
 				_time_offset_days = 0.0
+			KEY_SPACE:
+				_speed_idx = (_speed_idx + 1) % TIME_SPEEDS.size()
+				_time_speed = TIME_SPEEDS[_speed_idx]
+			KEY_R:
+				_time_offset_days = 0.0
+				_speed_idx = 0
+				_time_speed = 0.0

@@ -36,7 +36,7 @@ unique_name_in_owner = true
 layout_mode = 2
 custom_minimum_size = Vector2(150, 0)
 min_value = 5.0
-max_value = 500.0
+max_value = 50000.0
 step = 1.0
 value = 80.0
 
@@ -53,6 +53,28 @@ layout_mode = 2
 
 [node name="HelpLabel" type="Label" parent="TopBar"]
 layout_mode = 2
-text = "← → ±1 day | ↑ ↓ ±30 days | Home = now | Scroll = zoom"
+text = "← → ±1day | ↑ ↓ ±30days | Space=speed | R=reset | Click=select | ESC=deselect | Scroll=zoom"
 theme_override_colors/font_color = Color(0.6, 0.6, 0.6, 1)
 theme_override_font_sizes/font_size = 11
+
+[node name="InfoPanel" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 0.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -260.0
+offset_top = 40.0
+grow_horizontal = 0
+grow_vertical = 2
+visible = false
+
+[node name="InfoLabel" type="RichTextLabel" parent="InfoPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(240, 0)
+bbcode_enabled = true
+text = ""
+theme_override_font_sizes/normal_font_size = 13
