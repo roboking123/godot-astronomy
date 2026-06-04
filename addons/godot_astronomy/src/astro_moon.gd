@@ -282,7 +282,7 @@ static func _term(ctx: Dictionary, p: int, q: int, r: int, s: int) -> Array[floa
 static func calc_moon(t: float) -> MoonEcliptic:
 	var ctx: Dictionary = _init_context(t)
 
-	# 85 AddSol terms
+	# 104 AddSol terms
 	for row: Array in _ADDSOL_DATA:
 		var xy: Array[float] = _term(ctx, int(row[4]), int(row[5]), int(row[6]), int(row[7]))
 		ctx.dlam += row[0] * xy[1]
