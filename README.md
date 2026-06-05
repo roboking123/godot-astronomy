@@ -1,8 +1,8 @@
 # Godot Astronomy
 
-Precise astronomical calculations for **Godot 4.6+** — the first GDScript port of [cosinekitty/astronomy](https://github.com/cosinekitty/astronomy).
+Real-time sun, moon, and planet positions for **Godot 4.6+**. Calculate precise sunrise/sunset times, moon phases, and planetary orbits — pure GDScript, no dependencies.
 
-Pure GDScript, no native extensions, no dependencies, works on all platforms.
+Use it for day/night cycles, astronomical simulations, navigation by stars, or anything that needs to know where celestial bodies are.
 
 ![Preview](docs/images/preview.png)
 
