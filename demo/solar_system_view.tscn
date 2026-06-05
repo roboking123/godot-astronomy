@@ -2,6 +2,39 @@
 
 [ext_resource type="Script" path="res://demo/solar_system_view.gd" id="1_solar"]
 
+[sub_resource type="StyleBoxFlat" id="PanelBG"]
+bg_color = Color(0.05, 0.05, 0.1, 0.75)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+content_margin_left = 12.0
+content_margin_top = 10.0
+content_margin_right = 12.0
+content_margin_bottom = 10.0
+
+[sub_resource type="StyleBoxFlat" id="HelpBG"]
+bg_color = Color(0.05, 0.05, 0.1, 0.6)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+content_margin_left = 12.0
+content_margin_top = 6.0
+content_margin_right = 12.0
+content_margin_bottom = 6.0
+
+[sub_resource type="StyleBoxFlat" id="TitleBG"]
+bg_color = Color(0.05, 0.05, 0.1, 0.6)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+content_margin_left = 10.0
+content_margin_top = 6.0
+content_margin_right = 10.0
+content_margin_bottom = 6.0
+
 [node name="SolarSystemView" type="Control"]
 layout_mode = 3
 anchors_preset = 15
@@ -11,27 +44,36 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_solar")
 
-[node name="TopBar" type="HBoxContainer" parent="."]
+[node name="TitlePanel" type="PanelContainer" parent="."]
 layout_mode = 1
-anchors_preset = 10
-anchor_right = 1.0
-offset_bottom = 36.0
-grow_horizontal = 2
-theme_override_constants/separation = 12
+anchors_preset = 0
+offset_left = 12.0
+offset_top = 12.0
+offset_right = 280.0
+offset_bottom = 48.0
+theme_override_styles/panel = SubResource("TitleBG")
 
-[node name="DateLabel" type="Label" parent="TopBar"]
+[node name="TitleLabel" type="Label" parent="TitlePanel"]
 unique_name_in_owner = true
 layout_mode = 2
+theme_override_font_sizes/font_size = 15
+text = "Solar System View"
+
+[node name="DatePanel" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 0
+offset_left = 12.0
+offset_top = 54.0
+offset_right = 280.0
+offset_bottom = 82.0
+theme_override_styles/panel = SubResource("TitleBG")
+
+[node name="DateLabel" type="Label" parent="DatePanel"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+theme_override_colors/font_color = Color(0.7, 0.75, 0.85, 1)
 text = "Loading..."
-
-[node name="Sep1" type="VSeparator" parent="TopBar"]
-layout_mode = 2
-
-[node name="HelpLabel" type="Label" parent="TopBar"]
-layout_mode = 2
-text = "← → select | ↑ ↓ ±30days | Space=speed | R=reset | ESC=deselect | Scroll=zoom | Backspace=menu"
-theme_override_colors/font_color = Color(0.6, 0.6, 0.6, 1)
-theme_override_font_sizes/font_size = 11
 
 [node name="InfoPanel" type="PanelContainer" parent="."]
 unique_name_in_owner = true
@@ -41,11 +83,14 @@ anchor_left = 1.0
 anchor_top = 0.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -260.0
-offset_top = 40.0
+offset_left = -280.0
+offset_top = 12.0
+offset_right = -12.0
+offset_bottom = -50.0
 grow_horizontal = 0
 grow_vertical = 2
 visible = false
+theme_override_styles/panel = SubResource("PanelBG")
 
 [node name="InfoLabel" type="RichTextLabel" parent="InfoPanel"]
 unique_name_in_owner = true
@@ -53,4 +98,42 @@ layout_mode = 2
 custom_minimum_size = Vector2(240, 0)
 bbcode_enabled = true
 text = ""
+scroll_active = false
 theme_override_font_sizes/normal_font_size = 13
+
+[node name="BackButton" type="Button" parent="."]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 12.0
+offset_top = -44.0
+offset_right = 110.0
+offset_bottom = -12.0
+grow_vertical = 0
+text = "← Back"
+theme_override_font_sizes/font_size = 13
+
+[node name="HelpPanel" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -300.0
+offset_top = -50.0
+offset_right = 300.0
+offset_bottom = -12.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_styles/panel = SubResource("HelpBG")
+
+[node name="HelpLabel" type="Label" parent="HelpPanel"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.65, 0.65, 0.7, 1)
+theme_override_font_sizes/font_size = 11
+horizontal_alignment = 1
+text = "← → select  |  ↑ ↓ ±30 days  |  Space speed  |  R reset  |  ESC deselect  |  Scroll zoom"
+
+[connection signal="pressed" from="BackButton" to="." method="_on_back_pressed"]

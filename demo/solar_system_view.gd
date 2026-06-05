@@ -60,7 +60,13 @@ var _orbit_points: Array = []  # Array[PackedVector2Array]
 var _orbit_base_pos: Array = []  # 烘焙時的行星位置（Vector2）
 var _moon_orbit_points: PackedVector2Array
 var _rebake_cooldown: float = 0.0
-const REBAKE_MIN_INTERVAL: float = 0.25  # 最短重烘焙間隔（秒）
+const REBAKE_MIN_INTERVAL: float = 0.5  # 最短重烘焙間隔（秒）
+var _bake_queue: Array[int] = []  # 待烘焙的行星索引
+var _bake_base_ut: float = 0.0
+const BAKE_PLANETS_PER_FRAME: int = 2  # 每幀最多烘焙幾顆行星
+var _info_update_timer: float = 0.0
+const INFO_UPDATE_INTERVAL: float = 0.2  # 資訊面板更新間隔（秒）
+var _prev_offset_days: float = 0.0  # 上一幀的時間偏移，用來判斷是否需要重繪
 
 var _selected: int = -1  # -1=無, 其餘用 Body enum
 var _focus_offset: Vector2 = Vector2.ZERO
@@ -82,7 +88,7 @@ func _ready() -> void:
 	_orbit_points.resize(PLANET_COUNT)
 	_orbit_base_pos.resize(PLANET_COUNT)
 	_update_positions()
-	_bake_orbits()
+	_bake_orbits_sync()
 
 
 func _process(delta: float) -> void:
@@ -117,9 +123,18 @@ func _process(delta: float) -> void:
 			_bake_orbits()
 			_rebake_cooldown = REBAKE_MIN_INTERVAL
 
+	_bake_tick()
+
 	if _selected >= 0:
-		_update_info_panel()
-	queue_redraw()
+		_info_update_timer -= delta
+		if _info_update_timer <= 0.0:
+			_update_info_panel()
+			_info_update_timer = INFO_UPDATE_INTERVAL
+
+	# 只在畫面有變化時才重繪
+	if _time_speed != 0.0 or _time_offset_days != _prev_offset_days or not _bake_queue.is_empty():
+		_prev_offset_days = _time_offset_days
+		queue_redraw()
 
 
 func _update_positions() -> void:
@@ -218,33 +233,62 @@ func _draw() -> void:
 			"Moon", HORIZONTAL_ALIGNMENT_LEFT, -1, 9, MOON_COLOR)
 
 
-func _bake_orbits() -> void:
-	var base_ut: float = _current_time.ut
-	for i: int in PLANET_COUNT:
-		var planet: AstroPlanets.Planet = i as AstroPlanets.Planet
-		var period: float = ORBIT_PERIODS_DAYS[i]
-		var pts: PackedVector2Array = PackedVector2Array()
-		pts.resize(ORBIT_SAMPLES + 1)
-		for j: int in ORBIT_SAMPLES + 1:
-			var t: AstroTime.Moment = AstroTime.time_from_days(
-				base_ut + period * float(j) / float(ORBIT_SAMPLES))
-			var pos: Vector3
-			if planet == Body.EARTH:
-				pos = -AstroSun.sun_position(t)
-			else:
-				pos = AstroPlanets.helio_position(planet, t)
-			pts[j] = Vector2(pos.x, -pos.y)
-		_orbit_points[i] = pts
-		# 記住烘焙時的行星位置（第一個取樣點 = 當前時間）
-		_orbit_base_pos[i] = pts[0]
 
-	# 月球軌道（過去半圈 + 未來半圈）
+
+func _bake_orbits() -> void:
+	_bake_base_ut = _current_time.ut
+	_bake_queue.clear()
+	for i: int in PLANET_COUNT:
+		_bake_queue.append(i)
+	_bake_queue.append(-1)  # -1 = 月球軌道
+
+
+func _bake_orbits_sync() -> void:
+	_bake_base_ut = _current_time.ut
+	_bake_queue.clear()
+	for i: int in PLANET_COUNT:
+		_bake_planet_orbit(i)
+	_bake_moon_orbit()
+
+
+func _bake_tick() -> void:
+	if _bake_queue.is_empty():
+		return
+	var count: int = 0
+	while not _bake_queue.is_empty() and count < BAKE_PLANETS_PER_FRAME:
+		var idx: int = _bake_queue.pop_front()
+		if idx == -1:
+			_bake_moon_orbit()
+		else:
+			_bake_planet_orbit(idx)
+		count += 1
+
+
+func _bake_planet_orbit(i: int) -> void:
+	var planet: AstroPlanets.Planet = i as AstroPlanets.Planet
+	var period: float = ORBIT_PERIODS_DAYS[i]
+	var pts: PackedVector2Array = PackedVector2Array()
+	pts.resize(ORBIT_SAMPLES + 1)
+	for j: int in ORBIT_SAMPLES + 1:
+		var t: AstroTime.Moment = AstroTime.time_from_days(
+			_bake_base_ut + period * float(j) / float(ORBIT_SAMPLES))
+		var pos: Vector3
+		if planet == Body.EARTH:
+			pos = -AstroSun.sun_position(t)
+		else:
+			pos = AstroPlanets.helio_position(planet, t)
+		pts[j] = Vector2(pos.x, -pos.y)
+	_orbit_points[i] = pts
+	_orbit_base_pos[i] = pts[0]
+
+
+func _bake_moon_orbit() -> void:
 	var moon_pts: PackedVector2Array = PackedVector2Array()
 	var moon_samples: int = 60
 	moon_pts.resize(moon_samples + 1)
 	for j: int in moon_samples + 1:
 		var t: AstroTime.Moment = AstroTime.time_from_days(
-			base_ut - 13.65 + 27.3 * float(j) / float(moon_samples))
+			_bake_base_ut - 13.65 + 27.3 * float(j) / float(moon_samples))
 		var earth: Vector3 = -AstroSun.sun_position(t)
 		var moon_geo: AstroMoon.GeoMoonResult = AstroMoon.geo_moon(t)
 		var moon_helio: Vector3 = earth + moon_geo.j2000
@@ -308,7 +352,8 @@ func _select(idx: int) -> void:
 	if FOCUS_ZOOM.has(idx):
 		_au_to_px = FOCUS_ZOOM[idx] as float
 	info_panel.visible = true
-	_bake_orbits()
+	_info_update_timer = 0.0
+	_bake_orbits_sync()
 
 
 func _select_next() -> void:
@@ -331,17 +376,17 @@ func _deselect() -> void:
 	_selected = -1
 	info_panel.visible = false
 	_au_to_px = 80.0
-	_bake_orbits()
+	_bake_orbits_sync()
 
 
 func _update_info_panel() -> void:
-	var text: String = ""
+	var t: String = ""
 
 	if _selected == Body.SUN:
-		text += "[b]Sun[/b]\n\n"
-		text += "Type: G2V Main Sequence\n"
-		text += "Distance from Earth: %.4f AU\n" % _planet_positions[Body.EARTH].length()
-		info_label.text = text
+		t += "[b][color=#f0c050]☀ Sun[/color][/b]\n\n"
+		t += "[color=#888]Type[/color]  [color=#a0d8ef]G2V Main Sequence[/color]\n"
+		t += "[color=#888]Dist from Earth[/color]  [color=#a0d8ef]%.4f AU[/color]\n" % _planet_positions[Body.EARTH].length()
+		info_label.text = t
 		return
 
 	if _selected == Body.MOON:
@@ -352,13 +397,13 @@ func _update_info_panel() -> void:
 		var phase: float = AstroEngine.moon_phase(sun_j2000, geo_moon.j2000, _current_time)
 		var phase_name: String = CelestialState.phase_name(phase)
 		var illum: float = CelestialState.phase_to_illumination(phase)
-		text += "[b]Moon[/b]\n\n"
-		text += "Phase: %s (%.0f°)\n" % [phase_name, phase]
-		text += "Illumination: %.0f%%\n" % (illum * 100.0)
-		text += "Distance from Earth: %.0f km\n" % lib.dist_km
-		text += "Apparent diameter: %.4f°\n" % lib.diam_deg
-		text += "Orbital period: 27.3 days\n"
-		info_label.text = text
+		t += "[b][color=#b0c4de]☽ Moon[/color][/b]\n\n"
+		t += "[color=#888]Phase[/color]  [color=#a0d8ef]%s[/color] [color=#888](%.0f°)[/color]\n" % [phase_name, phase]
+		t += "[color=#888]Illum[/color]  [color=#a0d8ef]%.0f%%[/color]\n" % (illum * 100.0)
+		t += "[color=#888]Dist[/color]   [color=#a0d8ef]%.0f km[/color]\n" % lib.dist_km
+		t += "[color=#888]Diameter[/color] [color=#a0d8ef]%.4f°[/color]\n" % lib.diam_deg
+		t += "[color=#888]Period[/color]  [color=#a0d8ef]27.3 days[/color]\n"
+		info_label.text = t
 		return
 
 	if _selected < 0 or _selected >= PLANET_COUNT:
@@ -368,7 +413,6 @@ func _update_info_panel() -> void:
 	var pos: Vector3 = _planet_positions[_selected]
 	var helio_dist: float = pos.length()
 
-	# 地心距離
 	var earth_pos: Vector3 = _planet_positions[Body.EARTH]
 	var geo_dist: float = (pos - earth_pos).length()
 
@@ -379,18 +423,18 @@ func _update_info_panel() -> void:
 		now_dict.hour, now_dict.minute, float(now_dict.second),
 		OBSERVER_LAT, OBSERVER_LON)
 
-	var above: String = "Yes" if hor.altitude > 0.0 else "No"
+	var above_str: String = "[color=#6be86b]Yes[/color]" if hor.altitude > 0.0 else "[color=#e86b6b]No[/color]"
 
-	text += "[b]%s[/b]\n\n" % body_name
-	text += "Distance from Sun: %.4f AU\n" % helio_dist
-	text += "Distance from Earth: %.4f AU\n" % geo_dist
-	text += "Orbital period: %.1f days\n\n" % ORBIT_PERIODS_DAYS[_selected]
-	text += "[b]From %.1f°N, %.1f°E[/b]\n" % [OBSERVER_LAT, OBSERVER_LON]
-	text += "Azimuth: %.1f°\n" % hor.azimuth
-	text += "Altitude: %.1f°\n" % hor.altitude
-	text += "Above horizon: %s\n" % above
+	t += "[b][color=#c4a0e8]%s[/color][/b]\n\n" % body_name
+	t += "[color=#888]Dist from Sun[/color]   [color=#a0d8ef]%.4f AU[/color]\n" % helio_dist
+	t += "[color=#888]Dist from Earth[/color] [color=#a0d8ef]%.4f AU[/color]\n" % geo_dist
+	t += "[color=#888]Period[/color]  [color=#a0d8ef]%.1f days[/color]\n" % ORBIT_PERIODS_DAYS[_selected]
+	t += "\n"
+	t += "[b][color=#7ec8e3]Observer %.1f°N, %.1f°E[/color][/b]\n" % [OBSERVER_LAT, OBSERVER_LON]
+	t += "[color=#888]Az[/color]   [color=#a0d8ef]%.1f°[/color]\n" % hor.azimuth
+	t += "[color=#888]Alt[/color]  [color=#a0d8ef]%.1f°[/color]\n" % hor.altitude
+	t += "[color=#888]Above horizon[/color]  %s\n" % above_str
 
-	# 地球特有：月球資訊
 	if _selected == Body.EARTH:
 		var geo_moon: AstroMoon.GeoMoonResult = AstroMoon.geo_moon(_current_time)
 		var lib: AstroMoon.LibrationResult = AstroMoon.libration(
@@ -400,13 +444,13 @@ func _update_info_panel() -> void:
 		var phase_name: String = CelestialState.phase_name(phase)
 		var illum: float = CelestialState.phase_to_illumination(phase)
 
-		text += "\n[b]Moon[/b]\n"
-		text += "Phase: %s (%.0f°)\n" % [phase_name, phase]
-		text += "Illumination: %.0f%%\n" % (illum * 100.0)
-		text += "Distance: %.0f km\n" % lib.dist_km
-		text += "Apparent diameter: %.4f°\n" % lib.diam_deg
+		t += "\n[b][color=#b0c4de]☽ Moon[/color][/b]\n"
+		t += "[color=#888]Phase[/color]  [color=#a0d8ef]%s[/color] [color=#888](%.0f°)[/color]\n" % [phase_name, phase]
+		t += "[color=#888]Illum[/color]  [color=#a0d8ef]%.0f%%[/color]\n" % (illum * 100.0)
+		t += "[color=#888]Dist[/color]   [color=#a0d8ef]%.0f km[/color]\n" % lib.dist_km
+		t += "[color=#888]Diameter[/color] [color=#a0d8ef]%.4f°[/color]\n" % lib.diam_deg
 
-	info_label.text = text
+	info_label.text = t
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -433,4 +477,12 @@ func _unhandled_input(event: InputEvent) -> void:
 				_speed_idx = 0
 				_time_speed = 0.0
 			KEY_BACKSPACE:
-				get_tree().change_scene_to_file("res://demo/main_menu.tscn")
+				_go_back()
+
+
+func _go_back() -> void:
+	get_tree().change_scene_to_file("res://demo/main_menu.tscn")
+
+
+func _on_back_pressed() -> void:
+	_go_back()

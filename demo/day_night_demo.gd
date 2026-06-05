@@ -3,8 +3,9 @@ extends Node3D
 ## Controls: ← → ±1 hour, ↑ ↓ ±1 day, Space = pause, 1-5 = time scale, R = reset
 
 @onready var celestial: CelestialBody = $CelestialBody
-@onready var info_label: Label = $UI/InfoLabel
-@onready var help_label: Label = $UI/HelpLabel
+@onready var info_label: RichTextLabel = %InfoLabel
+@onready var title_label: Label = %TitleLabel
+@onready var help_label: Label = %HelpLabel
 @onready var environment: WorldEnvironment = $WorldEnvironment
 @onready var camera: Camera3D = $Camera3D
 
@@ -34,7 +35,7 @@ func _ready() -> void:
 	_sky_lut = _bake_sky_lut()
 	celestial.time_scale = _time_scales[_current_scale_idx]
 	celestial.use_system_time = true
-	help_label.text = "WASD=move | QE=up/down | Mouse=look | Shift=fast | ESC=toggle mouse | ← → ±1hr | ↑ ↓ ±1day | Space=pause | 1-5=speed | R=reset | Backspace=menu"
+	help_label.text = "WASD move  |  QE up/down  |  Mouse look  |  Shift fast  |  ESC toggle mouse\n← → ±1hr  |  ↑ ↓ ±1day  |  Space pause  |  1-5 speed  |  R reset"
 
 	celestial.sunrise.connect(func() -> void: _flash_message("Sunrise"))
 	celestial.sunset.connect(func() -> void: _flash_message("Sunset"))
@@ -116,8 +117,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_5:
 				_set_scale(4)
 			KEY_BACKSPACE:
-				Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-				get_tree().change_scene_to_file("res://demo/main_menu.tscn")
+				_go_back()
 
 
 func _move_camera(delta: float) -> void:
@@ -181,8 +181,7 @@ func _set_scale(idx: int) -> void:
 
 func _update_info() -> void:
 	var s: CelestialState = celestial.state
-	var jd: float = s.julian_day
-	var pause_str: String = " [PAUSED]" if celestial.paused else ""
+	var pause_str: String = "  [color=#e8c44a]PAUSED[/color]" if celestial.paused else ""
 
 	var condition: String
 	if s.is_day: condition = "Day"
@@ -191,24 +190,49 @@ func _update_info() -> void:
 	elif s.is_astronomical_twilight: condition = "Astro Twilight"
 	else: condition = "Night"
 
-	var planet_str: String = ""
+	var t: String = ""
+
+	# 時間與速度
+	t += "[color=#e8c44a]%s[/color]%s\n" % [_scale_names[_current_scale_idx], pause_str]
+	t += "[color=#888]JD[/color] %.4f\n" % s.julian_day
+	t += "\n"
+
+	# 太陽
+	t += "[b][color=#f0c050]☀ Sun[/color][/b]\n"
+	t += "  [color=#888]Alt[/color]  [color=#a0d8ef]%.2f°[/color]\n" % s.sun_altitude
+	t += "  [color=#888]Az[/color]   [color=#a0d8ef]%.2f°[/color]\n" % s.sun_azimuth
+	t += "  [color=#888]Dist[/color] [color=#a0d8ef]%.6f AU[/color]\n" % s.sun_distance_au
+	t += "  [color=#888]Energy[/color] [color=#a0d8ef]%.0f%%[/color]\n" % (s.sun_energy * 100.0)
+	t += "\n"
+
+	# 月亮
+	t += "[b][color=#b0c4de]☽ Moon[/color][/b]\n"
+	t += "  [color=#888]Phase[/color] [color=#a0d8ef]%s[/color]\n" % s.moon_phase_name
+	t += "  [color=#888]Illum[/color] [color=#a0d8ef]%.1f%%[/color] [color=#888](%.1f°)[/color]\n" % [s.moon_illumination * 100.0, s.moon_phase_deg]
+	t += "  [color=#888]Alt[/color]  [color=#a0d8ef]%.2f°[/color]\n" % s.moon_altitude
+	t += "  [color=#888]Az[/color]   [color=#a0d8ef]%.2f°[/color]\n" % s.moon_azimuth
+	t += "  [color=#888]Dist[/color] [color=#a0d8ef]%.0f km[/color]\n" % s.moon_distance_km
+	t += "\n"
+
+	# 天空
+	t += "[b][color=#7ec8e3]Sky[/color][/b]\n"
+	t += "  [color=#888]Condition[/color] [color=#a0d8ef]%s[/color]\n" % condition
+	t += "  [color=#888]Darkness[/color]  [color=#a0d8ef]%.0f%%[/color]\n" % (s.sky_darkness * 100.0)
+	t += "  [color=#888]GAST[/color]  [color=#a0d8ef]%.4f h[/color]\n" % s.sidereal_time
+	t += "\n"
+
+	# 行星
+	t += "[b][color=#c4a0e8]Planets[/color][/b]\n"
+	var any_visible: bool = false
 	for pname: String in s.planet_altitudes:
 		var alt: float = s.planet_altitudes[pname] as float
 		if alt > 0.0:
-			planet_str += "%s %.0f° | " % [pname, alt]
-	if planet_str.length() > 3:
-		planet_str = planet_str.left(planet_str.length() - 3)
-	else:
-		planet_str = "(none above horizon)"
+			t += "  [color=#888]%s[/color] [color=#a0d8ef]%.1f°[/color]\n" % [pname, alt]
+			any_visible = true
+	if not any_visible:
+		t += "  [color=#666](none above horizon)[/color]\n"
 
-	info_label.text = (
-		"Sun: Alt %.1f°  Az %.1f°  Energy %.0f%%\n" % [s.sun_altitude, s.sun_azimuth, s.sun_energy * 100] +
-		"Moon: %s (%.0f%% lit)  Alt %.1f°\n" % [s.moon_phase_name, s.moon_illumination * 100, s.moon_altitude] +
-		"Planets: %s\n" % planet_str +
-		"Sky: %s  Darkness %.0f%%\n" % [condition, s.sky_darkness * 100] +
-		"Speed: %s%s\n" % [_scale_names[_current_scale_idx], pause_str] +
-		"JD: %.4f" % jd
-	)
+	info_label.text = t
 
 
 func _update_sky_color() -> void:
@@ -327,3 +351,12 @@ var _flash_text: String = ""
 func _flash_message(msg: String) -> void:
 	_flash_text = msg
 	_flash_timer = 3.0
+
+
+func _go_back() -> void:
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	get_tree().change_scene_to_file("res://demo/main_menu.tscn")
+
+
+func _on_back_pressed() -> void:
+	_go_back()
