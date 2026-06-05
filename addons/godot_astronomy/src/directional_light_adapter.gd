@@ -26,10 +26,13 @@ func apply(state: CelestialState) -> void:
 	if not _resolved:
 		_resolve_lights(state)
 
+	var sun_up: Vector3 = Vector3.FORWARD if absf(state.sun_direction.y) > 0.99 else Vector3.UP
+
 	if _sun_light != null:
 		_sun_light.look_at_from_position(
 			_sun_light.global_position,
-			_sun_light.global_position - state.sun_direction
+			_sun_light.global_position - state.sun_direction,
+			sun_up
 		)
 		var alt: float = state.sun_altitude
 		if alt > 10.0:
@@ -43,9 +46,11 @@ func apply(state: CelestialState) -> void:
 		_sun_light.visible = state.sun_energy > 0.01
 
 	if _moon_light != null:
+		var moon_up: Vector3 = Vector3.FORWARD if absf(state.moon_direction.y) > 0.99 else Vector3.UP
 		_moon_light.look_at_from_position(
 			_moon_light.global_position,
-			_moon_light.global_position - state.moon_direction
+			_moon_light.global_position - state.moon_direction,
+			moon_up
 		)
 		var moon_energy: float = state.moon_illumination * moon_max_energy
 		if state.moon_altitude < 0.0:

@@ -279,9 +279,10 @@ func _update_state() -> void:
 func _apply_lights() -> void:
 	var s: CelestialState = state
 
+	var light_up: Vector3 = Vector3.FORWARD if absf(s.sun_direction.y) > 0.99 else Vector3.UP
+
 	if sun_light != null:
-		# Direction: light shines FROM the sun toward the scene
-		sun_light.basis = Basis.looking_at(-s.sun_direction)
+		sun_light.basis = Basis.looking_at(-s.sun_direction, light_up)
 		# Color: warm near horizon, neutral at high altitude
 		if s.sun_altitude > 10.0:
 			sun_light.light_color = sun_color_day
@@ -294,7 +295,8 @@ func _apply_lights() -> void:
 		sun_light.visible = s.sun_energy > 0.01
 
 	if moon_light != null:
-		moon_light.basis = Basis.looking_at(-s.moon_direction)
+		var moon_up: Vector3 = Vector3.FORWARD if absf(s.moon_direction.y) > 0.99 else Vector3.UP
+		moon_light.basis = Basis.looking_at(-s.moon_direction, moon_up)
 		var energy: float = s.moon_illumination * moon_max_energy
 		# Fade near horizon
 		if s.moon_altitude < 0.0:
