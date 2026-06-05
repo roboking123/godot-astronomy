@@ -9,7 +9,7 @@ background_color = Color(0.2, 0.45, 0.85, 1)
 ambient_light_source = 1
 ambient_light_color = Color(0.6, 0.7, 0.85, 1)
 ambient_light_energy = 0.4
-tonemap_mode = 2
+tonemap_mode = 0
 
 [sub_resource type="PlaneMesh" id="BoxMesh_floor"]
 size = Vector2(2000, 2000)

@@ -260,8 +260,8 @@ func _update_sky_color() -> void:
 	env.background_mode = Environment.BG_COLOR
 	env.background_color = sky_color
 
-	env.ambient_light_energy = lerpf(0.02, 0.4, 1.0 - s.sky_darkness)
-	env.ambient_light_color = sky_color.lerp(Color.WHITE, 0.5)
+	env.ambient_light_energy = lerpf(0.005, 0.4, 1.0 - s.sky_darkness)
+	env.ambient_light_color = sky_color.lerp(Color.WHITE, 0.3)
 
 
 ## 從查找表取樣天空色（線性插值）
