@@ -167,7 +167,7 @@ var full_moon = AstroSearch.search_moon_phase(180.0, time, 30.0)
 
 ### AstroEngine
 
-Facade — one call computes everything.
+One call gets sun, moon, and sidereal time for a given time and location.
 
 | Function | Returns | Description |
 |----------|---------|-------------|
@@ -216,7 +216,7 @@ Scene node that updates every frame. Add to your scene tree — it creates sun/m
 
 ## Accuracy
 
-Same algorithms as [cosinekitty/astronomy](https://github.com/cosinekitty/astronomy), using 64-bit float (IEEE 754 double).
+Based on [cosinekitty/astronomy](https://github.com/cosinekitty/astronomy) and Meeus *Astronomical Algorithms*.
 
 | Model | Accuracy | Range |
 |-------|----------|-------|
@@ -250,7 +250,7 @@ Press F5 to launch the **demo menu** — pick a scene from there.
 
 Astronomical algorithms ported from [cosinekitty/astronomy](https://github.com/cosinekitty/astronomy) by Don Cross (MIT License).
 
-Moon position algorithm from Montenbruck & Pfleger, *Astronomy on the Personal Computer*.
+Moon position from Jean Meeus, *Astronomical Algorithms*, Chapter 47.
 
 ## License
 
