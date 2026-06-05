@@ -4,6 +4,8 @@ Precise astronomical calculations for **Godot 4.6+** — the first GDScript port
 
 Pure GDScript, no native extensions, no dependencies, works on all platforms.
 
+![Preview](docs/images/preview.png)
+
 ## Installation
 
 Copy `addons/godot_astronomy/` into your project's `addons/` directory, then enable the plugin in **Project → Project Settings → Plugins**. All classes are available globally via `class_name`.
