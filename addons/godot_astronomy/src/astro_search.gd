@@ -29,7 +29,7 @@ static func search(
 	var f2: float = func_callback.call(t2)
 
 	for iter: int in 20:
-		var dt: float = (t2.tt - t1.tt) / 2.0
+		var dt: float = (t2.ut - t1.ut) / 2.0
 		var tmid: AstroTime.Moment = AstroTime.time_from_days(t1.ut + dt)
 		if absf(dt) < dt_days:
 			return tmid
@@ -351,7 +351,8 @@ static func _search_altitude(
 	var a1: float = _altdiff(body, direction, lat, lon, height, body_radius_au, target_altitude, t1)
 	var a2: float = a1
 
-	while true:
+	var max_steps: int = ceili(absf(limit_days) / RISE_SET_DT) + 2
+	for _step: int in max_steps:
 		if limit_days < 0.0:
 			t1 = AstroTime.time_from_days(t2.ut - RISE_SET_DT)
 			a1 = _altdiff(body, direction, lat, lon, height, body_radius_au, target_altitude, t1)
