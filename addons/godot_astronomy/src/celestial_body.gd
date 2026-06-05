@@ -214,7 +214,7 @@ func _update_state() -> void:
 	s.sun_energy = CelestialState.altitude_to_energy(sun_hor.altitude)
 
 	# ── Moon ──
-	var geo: AstroMoon.GeoMoonResult = AstroMoon.geo_moon(time)
+	var geo: AstroMoon.GeoMoonResult = AstroMoonMeeus.geo_moon(time)
 	var moon_topo: Vector3 = geo.j2000 - observer_j2000
 	var moon_ofdate: Vector3 = AstroCoords.j2000_to_ofdate(moon_topo, time)
 	var moon_rd: AstroCoords.RaDec = AstroCoords.vector2radec(moon_ofdate)

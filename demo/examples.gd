@@ -135,7 +135,7 @@ func example_3_moon_info() -> void:
 	var time: AstroTime.Moment = AstroTime.make_time(2026, 6, 4, 6, 30, 0.0)
 
 	# 月球宇宙座標 + 中間值
-	var geo: AstroMoon.GeoMoonResult = AstroMoon.geo_moon(time)
+	var geo: AstroMoon.GeoMoonResult = AstroMoonMeeus.geo_moon(time)
 
 	# 天秤動 + 距離 + 視直徑
 	var lib: AstroMoon.LibrationResult = AstroMoon.libration(time, geo.ecliptic, geo.tobl)

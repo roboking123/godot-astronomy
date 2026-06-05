@@ -154,7 +154,7 @@ func _update_positions() -> void:
 			_planet_positions[i] = AstroPlanets.helio_position(planet, _current_time)
 
 	# 月球（地心 J2000 座標，轉日心）
-	var geo: AstroMoon.GeoMoonResult = AstroMoon.geo_moon(_current_time)
+	var geo: AstroMoon.GeoMoonResult = AstroMoonMeeus.geo_moon(_current_time)
 	var earth_pos: Vector3 = _planet_positions[Body.EARTH]
 	_moon_pos = earth_pos + geo.j2000
 	# Update date label
@@ -292,7 +292,7 @@ func _bake_moon_orbit() -> void:
 		var t: AstroTime.Moment = AstroTime.time_from_days(
 			_bake_base_ut - 13.65 + 27.3 * float(j) / float(moon_samples))
 		var earth: Vector3 = -AstroSun.sun_position(t)
-		var moon_geo: AstroMoon.GeoMoonResult = AstroMoon.geo_moon(t)
+		var moon_geo: AstroMoon.GeoMoonResult = AstroMoonMeeus.geo_moon(t)
 		var moon_helio: Vector3 = earth + moon_geo.j2000
 		moon_pts[j] = Vector2(moon_helio.x, -moon_helio.y)
 	_moon_orbit_points = moon_pts
@@ -396,7 +396,7 @@ func _update_info_panel() -> void:
 		return
 
 	if _selected == Body.MOON:
-		var geo_moon: AstroMoon.GeoMoonResult = AstroMoon.geo_moon(_current_time)
+		var geo_moon: AstroMoon.GeoMoonResult = AstroMoonMeeus.geo_moon(_current_time)
 		var lib: AstroMoon.LibrationResult = AstroMoon.libration(
 			_current_time, geo_moon.ecliptic, geo_moon.tobl)
 		var sun_j2000: Vector3 = AstroSun.sun_position(_current_time)
@@ -442,7 +442,7 @@ func _update_info_panel() -> void:
 	t += "[color=#888]Above horizon[/color]  %s\n" % above_str
 
 	if _selected == Body.EARTH:
-		var geo_moon: AstroMoon.GeoMoonResult = AstroMoon.geo_moon(_current_time)
+		var geo_moon: AstroMoon.GeoMoonResult = AstroMoonMeeus.geo_moon(_current_time)
 		var lib: AstroMoon.LibrationResult = AstroMoon.libration(
 			_current_time, geo_moon.ecliptic, geo_moon.tobl)
 		var sun_j2000: Vector3 = AstroSun.sun_position(_current_time)

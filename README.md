@@ -69,34 +69,34 @@ Sun position via VSOP87 Earth model.
 | `helio_distance(time)` | `float` | Earth-Sun distance (AU) |
 | `calc_earth(time)` | `Vector3` | Heliocentric Earth position (AU), no light-time correction |
 
-### AstroMoon
+### AstroMoonMeeus (default)
 
-Moon position via CalcMoon model + libration.
+Moon position via Meeus Ch.47 (~10 arcsec). **This is the default moon model used by all built-in components.**
 
 | Function | Returns | Description |
 |----------|---------|-------------|
 | `geo_moon(time)` | `GeoMoonResult` | Geocentric J2000 position + ecliptic intermediates |
-| `libration(time, ecliptic, tobl)` | `LibrationResult` | Optical + physical libration, distance, apparent diameter |
-
-**GeoMoonResult**: `j2000` (Vector3), `ecliptic` (MoonEcliptic), `tobl` (float)
-
-**LibrationResult**: `elon`, `elat` (libration degrees), `dist_km`, `diam_deg`, `mlon`, `mlat`, `pole_equ` (Vector3)
+| `position(T)` | `MeeusMoonResult` | Raw ecliptic position. T = Julian centuries from J2000 (TT) |
 
 ```gdscript
-var geo = AstroMoon.geo_moon(time)
+var geo = AstroMoonMeeus.geo_moon(time)
 var lib = AstroMoon.libration(time, geo.ecliptic, geo.tobl)
 print(lib.dist_km)   # 384400 km (typical)
 print(lib.diam_deg)  # ~0.52°
 ```
 
-### AstroMoonMeeus
+### AstroMoon
 
-Higher-precision moon model (Meeus Ch.47, ~10 arcsec). Drop-in replacement for `AstroMoon.geo_moon()`.
+Libration calculator + legacy CalcMoon model. Data types (`GeoMoonResult`, `LibrationResult`) are defined here.
 
 | Function | Returns | Description |
 |----------|---------|-------------|
-| `position(T)` | `MeeusMoonResult` | Ecliptic position. T = Julian centuries from J2000 (TT) |
-| `geo_moon(time)` | `GeoMoonResult` | Same interface as `AstroMoon.geo_moon()` |
+| `geo_moon(time)` | `GeoMoonResult` | Legacy CalcMoon position (~1° accuracy, slower — prefer `AstroMoonMeeus`) |
+| `libration(time, ecliptic, tobl)` | `LibrationResult` | Optical + physical libration, distance, apparent diameter |
+
+**GeoMoonResult**: `j2000` (Vector3), `ecliptic` (MoonEcliptic), `tobl` (float)
+
+**LibrationResult**: `elon`, `elat` (libration degrees), `dist_km`, `diam_deg`, `mlon`, `mlat`, `pole_equ` (Vector3)
 
 ### AstroPlanets
 
@@ -222,11 +222,11 @@ Same algorithms as [cosinekitty/astronomy](https://github.com/cosinekitty/astron
 | Model | Accuracy | Range |
 |-------|----------|-------|
 | Sun (VSOP87) | < 1 arcsecond | ±4000 years from J2000 |
-| Moon (CalcMoon) | ~1 degree | Modern dates |
-| Moon (Meeus) | ~10 arcseconds | Modern dates |
+| Moon (Meeus, default) | ~10 arcseconds | Modern dates |
+| Moon (CalcMoon, legacy) | ~1 degree | Modern dates |
 | Delta T | Espenak & Meeus polynomial | -500 to 2150 CE |
 
-**Known limitations**: CalcMoon is adequate for phase, illumination, and visual positioning. For sub-arcminute lunar precision, use `AstroMoonMeeus`.
+**Note**: Meeus is the default moon model (faster and 360× more precise than CalcMoon). CalcMoon (`AstroMoon.geo_moon()`) is retained for compatibility.
 
 ## Demo Scenes
 

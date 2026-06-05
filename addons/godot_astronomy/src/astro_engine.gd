@@ -35,7 +35,7 @@ static func compute(
 	var sun_dist: float = sun_j2000.length()
 
 	# ── Moon (J2000 geocentric + calc_moon intermediate results) ──
-	var geo: AstroMoon.GeoMoonResult = AstroMoon.geo_moon(time)
+	var geo: AstroMoon.GeoMoonResult = AstroMoonMeeus.geo_moon(time)
 	var moon_j2000: Vector3 = geo.j2000
 
 	# ── Topocentric correction (geocentric -> observer viewpoint) ──

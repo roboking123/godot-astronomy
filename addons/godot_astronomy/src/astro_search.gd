@@ -159,7 +159,7 @@ static func search_moon_phase(
 static func _moon_offset(target_lon: float, time: AstroTime.Moment) -> float:
 	var phase: float = AstroEngine.moon_phase(
 		AstroSun.sun_position(time),
-		AstroMoon.geo_moon(time).j2000,
+		AstroMoonMeeus.geo_moon(time).j2000,
 		time
 	)
 	return AstroTime.longitude_offset(phase - target_lon)
@@ -258,7 +258,7 @@ static func _altdiff(
 			geo_pos = AstroSun.sun_position(time)
 			dist = geo_pos.length()
 		Body.MOON:
-			var mr: AstroMoon.GeoMoonResult = AstroMoon.geo_moon(time)
+			var mr: AstroMoon.GeoMoonResult = AstroMoonMeeus.geo_moon(time)
 			geo_pos = mr.j2000
 			dist = geo_pos.length()
 		_:
