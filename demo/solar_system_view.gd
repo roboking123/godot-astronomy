@@ -67,6 +67,7 @@ const BAKE_PLANETS_PER_FRAME: int = 2  # 每幀最多烘焙幾顆行星
 var _info_update_timer: float = 0.0
 const INFO_UPDATE_INTERVAL: float = 0.2  # 資訊面板更新間隔（秒）
 var _prev_offset_days: float = 0.0  # 上一幀的時間偏移，用來判斷是否需要重繪
+var _needs_redraw: bool = true  # 髒標記，縮放/選中/跳時間都會設 true
 
 var _selected: int = -1  # -1=無, 其餘用 Body enum
 var _focus_offset: Vector2 = Vector2.ZERO
@@ -132,8 +133,9 @@ func _process(delta: float) -> void:
 			_info_update_timer = INFO_UPDATE_INTERVAL
 
 	# 只在畫面有變化時才重繪
-	if _time_speed != 0.0 or _time_offset_days != _prev_offset_days or not _bake_queue.is_empty():
+	if _time_speed != 0.0 or _time_offset_days != _prev_offset_days or not _bake_queue.is_empty() or _needs_redraw:
 		_prev_offset_days = _time_offset_days
+		_needs_redraw = false
 		queue_redraw()
 
 
@@ -302,8 +304,10 @@ func _gui_input(event: InputEvent) -> void:
 		if mb.pressed:
 			if mb.button_index == MOUSE_BUTTON_WHEEL_UP:
 				_au_to_px = clampf(_au_to_px * 1.15, 5.0, 50000.0)
+				_needs_redraw = true
 			elif mb.button_index == MOUSE_BUTTON_WHEEL_DOWN:
 				_au_to_px = clampf(_au_to_px / 1.15, 5.0, 50000.0)
+				_needs_redraw = true
 			elif mb.button_index == MOUSE_BUTTON_LEFT:
 				_try_select(mb.position)
 
@@ -353,6 +357,7 @@ func _select(idx: int) -> void:
 		_au_to_px = FOCUS_ZOOM[idx] as float
 	info_panel.visible = true
 	_info_update_timer = 0.0
+	_needs_redraw = true
 	_bake_orbits_sync()
 
 
@@ -376,6 +381,7 @@ func _deselect() -> void:
 	_selected = -1
 	info_panel.visible = false
 	_au_to_px = 80.0
+	_needs_redraw = true
 	_bake_orbits_sync()
 
 

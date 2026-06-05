@@ -12,6 +12,8 @@ extends Node3D
 var _time_scales: Array[float] = [1.0, 60.0, 600.0, 3600.0, 86400.0]
 var _scale_names: Array[String] = ["Real-time", "1 min/sec", "10 min/sec", "1 hr/sec", "1 day/sec"]
 var _current_scale_idx: int = 3
+var _info_update_timer: float = 0.0
+const INFO_UPDATE_INTERVAL: float = 0.15
 
 # 瑞利散射預計算天空色查找表（64 格，太陽高度 -18°~90°）
 var _sky_lut: PackedColorArray
@@ -37,8 +39,8 @@ func _ready() -> void:
 	celestial.use_system_time = true
 	help_label.text = "WASD move  |  QE up/down  |  Mouse look  |  Shift fast  |  ESC toggle mouse\n← → ±1hr  |  ↑ ↓ ±1day  |  Space pause  |  1-5 speed  |  R reset"
 
-	celestial.sunrise.connect(func() -> void: _flash_message("Sunrise"))
-	celestial.sunset.connect(func() -> void: _flash_message("Sunset"))
+	celestial.sunrise.connect(func() -> void: _flash_event("☀ Sunrise"))
+	celestial.sunset.connect(func() -> void: _flash_event("☽ Sunset"))
 
 	# 鏡頭初始朝向
 	var cam_rot: Vector3 = camera.rotation_degrees
@@ -76,7 +78,7 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	_move_camera(delta)
 	_update_celestial_meshes()
-	_update_info()
+	_update_info(delta)
 	_update_sky_color()
 
 
@@ -179,7 +181,16 @@ func _set_scale(idx: int) -> void:
 	celestial.time_scale = _time_scales[idx]
 
 
-func _update_info() -> void:
+func _update_info(delta: float) -> void:
+	# flash 倒數每幀更新
+	if _flash_timer > 0.0:
+		_flash_timer -= delta
+
+	_info_update_timer -= delta
+	if _info_update_timer > 0.0:
+		return
+	_info_update_timer = INFO_UPDATE_INTERVAL
+
 	var s: CelestialState = celestial.state
 	var pause_str: String = "  [color=#e8c44a]PAUSED[/color]" if celestial.paused else ""
 
@@ -231,6 +242,9 @@ func _update_info() -> void:
 			any_visible = true
 	if not any_visible:
 		t += "  [color=#666](none above horizon)[/color]\n"
+
+	if _flash_timer > 0.0 and _flash_text != "":
+		t += "\n[b][color=#f0c050]%s[/color][/b]\n" % _flash_text
 
 	info_label.text = t
 
@@ -348,7 +362,7 @@ func _compute_beta_ray(wavelengths_nm: Vector3) -> Vector3:
 var _flash_timer: float = 0.0
 var _flash_text: String = ""
 
-func _flash_message(msg: String) -> void:
+func _flash_event(msg: String) -> void:
 	_flash_text = msg
 	_flash_timer = 3.0
 
