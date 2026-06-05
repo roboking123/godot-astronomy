@@ -1,0 +1,91 @@
+[gd_scene load_steps=2 format=3 uid="uid://menu001"]
+
+[ext_resource type="Script" path="res://demo/main_menu.gd" id="1_menu"]
+
+[node name="MainMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_menu")
+
+[node name="BG" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.06, 0.06, 0.12, 1)
+
+[node name="Center" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -200.0
+offset_top = -160.0
+offset_right = 200.0
+offset_bottom = 160.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 20
+alignment = 1
+
+[node name="Title" type="Label" parent="Center"]
+layout_mode = 2
+text = "Godot Astronomy"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 32
+
+[node name="Subtitle" type="Label" parent="Center"]
+layout_mode = 2
+text = "Precise astronomical calculations for Godot 4.6+"
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(0.6, 0.65, 0.75, 1)
+theme_override_font_sizes/font_size = 14
+
+[node name="Spacer" type="Control" parent="Center"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 10)
+
+[node name="DayNightBtn" type="Button" parent="Center"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 48)
+text = "3D Day/Night Cycle"
+theme_override_font_sizes/font_size = 16
+
+[node name="DayNightDesc" type="Label" parent="Center"]
+layout_mode = 2
+text = "Real-time sun, moon, and planets with Rayleigh sky color"
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(0.5, 0.5, 0.6, 1)
+theme_override_font_sizes/font_size = 11
+
+[node name="SolarSystemBtn" type="Button" parent="Center"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 48)
+text = "Solar System View"
+theme_override_font_sizes/font_size = 16
+
+[node name="SolarSystemDesc" type="Label" parent="Center"]
+layout_mode = 2
+text = "Top-down ecliptic plane with real VSOP87 orbits"
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(0.5, 0.5, 0.6, 1)
+theme_override_font_sizes/font_size = 11
+
+
+[node name="Version" type="Label" parent="Center"]
+layout_mode = 2
+text = "v0.1.0 — MIT License"
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(0.35, 0.35, 0.45, 1)
+theme_override_font_sizes/font_size = 11
+
+[connection signal="pressed" from="Center/DayNightBtn" to="." method="_on_day_night_pressed"]
+[connection signal="pressed" from="Center/SolarSystemBtn" to="." method="_on_solar_system_pressed"]

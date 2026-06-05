@@ -26,9 +26,6 @@ script = ExtResource("1_demo")
 [node name="CelestialBody" type="Node3D" parent="." unique_id=1357255340]
 script = ExtResource("2_celestial")
 time_scale = 3600.0
-_status_sun = "Alt -29.4°  Az 318.9°  Energy 0%"
-_status_moon = "Waning Gibbous (85% lit)  Alt -8.2°"
-_status_sky = "Night  Darkness 100%"
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=583197385]
 environment = SubResource("Environment_1")

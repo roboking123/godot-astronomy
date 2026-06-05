@@ -34,7 +34,7 @@ func _ready() -> void:
 	_sky_lut = _bake_sky_lut()
 	celestial.time_scale = _time_scales[_current_scale_idx]
 	celestial.use_system_time = true
-	help_label.text = "WASD=move | QE=up/down | Mouse=look | Shift=fast | ESC=toggle mouse | ← → ±1hr | ↑ ↓ ±1day | Space=pause | 1-5=speed | R=reset"
+	help_label.text = "WASD=move | QE=up/down | Mouse=look | Shift=fast | ESC=toggle mouse | ← → ±1hr | ↑ ↓ ±1day | Space=pause | 1-5=speed | R=reset | Backspace=menu"
 
 	celestial.sunrise.connect(func() -> void: _flash_message("Sunrise"))
 	celestial.sunset.connect(func() -> void: _flash_message("Sunset"))
@@ -46,8 +46,8 @@ func _ready() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	_mouse_captured = true
 
-	_sun_mesh = _create_disc("res://demo/sun_disc.gdshader", 60.0)
-	var result: Array = _create_disc_with_mat("res://demo/moon_disc.gdshader", 30.0)
+	_sun_mesh = _create_disc("res://demo/shaders/sun_disc.gdshader", 60.0)
+	var result: Array = _create_disc_with_mat("res://demo/shaders/moon_disc.gdshader", 30.0)
 	_moon_mesh = result[0] as MeshInstance3D
 	_moon_mat = result[1] as ShaderMaterial
 
@@ -62,7 +62,7 @@ func _ready() -> void:
 		"Neptune": Color(0.5, 0.6, 1.0),
 	}
 	for pname: String in planet_colors:
-		var pr: Array = _create_disc_with_mat("res://demo/star_point.gdshader", 6.0)
+		var pr: Array = _create_disc_with_mat("res://demo/shaders/star_point.gdshader", 6.0)
 		var mesh: MeshInstance3D = pr[0] as MeshInstance3D
 		var mat: ShaderMaterial = pr[1] as ShaderMaterial
 		mat.set_shader_parameter("star_color", planet_colors[pname])
@@ -115,6 +115,9 @@ func _unhandled_input(event: InputEvent) -> void:
 				_set_scale(3)
 			KEY_5:
 				_set_scale(4)
+			KEY_BACKSPACE:
+				Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+				get_tree().change_scene_to_file("res://demo/main_menu.tscn")
 
 
 func _move_camera(delta: float) -> void:

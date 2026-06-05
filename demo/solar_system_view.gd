@@ -432,3 +432,5 @@ func _unhandled_input(event: InputEvent) -> void:
 				_time_offset_days = 0.0
 				_speed_idx = 0
 				_time_speed = 0.0
+			KEY_BACKSPACE:
+				get_tree().change_scene_to_file("res://demo/main_menu.tscn")

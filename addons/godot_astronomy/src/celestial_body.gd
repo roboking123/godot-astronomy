@@ -59,10 +59,26 @@ extends Node3D
 
 # ─── Live Status (read-only, visible in Inspector) ───
 
-@export_group("Status")
-@export_storage var _status_sun: String = ""
-@export_storage var _status_moon: String = ""
-@export_storage var _status_sky: String = ""
+@export_group("📊 Live Status (read-only)")
+@export_subgroup("Sun")
+@export var _sun_altitude: String = ""
+@export var _sun_azimuth: String = ""
+@export var _sun_distance: String = ""
+@export var _sun_energy: String = ""
+@export_subgroup("Moon")
+@export var _moon_phase: String = ""
+@export var _moon_altitude: String = ""
+@export var _moon_azimuth: String = ""
+@export var _moon_distance: String = ""
+@export var _moon_diameter: String = ""
+@export var _moon_illumination: String = ""
+@export_subgroup("Sky")
+@export var _sky_condition: String = ""
+@export var _sky_darkness: String = ""
+@export var _sky_sidereal_time: String = ""
+@export var _sky_julian_day: String = ""
+@export_subgroup("Planets")
+@export var _planets_visible: String = ""
 
 # ─── Signals ───
 
@@ -290,12 +306,35 @@ func _apply_lights() -> void:
 
 func _update_status_strings() -> void:
 	var s: CelestialState = state
-	_status_sun = "Alt %.1f°  Az %.1f°  Energy %.0f%%" % [s.sun_altitude, s.sun_azimuth, s.sun_energy * 100]
-	_status_moon = "%s (%.0f%% lit)  Alt %.1f°" % [s.moon_phase_name, s.moon_illumination * 100, s.moon_altitude]
-	var condition: String
-	if s.is_day: condition = "Day"
-	elif s.is_civil_twilight: condition = "Civil Twilight"
-	elif s.is_nautical_twilight: condition = "Nautical Twilight"
-	elif s.is_astronomical_twilight: condition = "Astro Twilight"
-	else: condition = "Night"
-	_status_sky = "%s  Darkness %.0f%%" % [condition, s.sky_darkness * 100]
+
+	# Sun
+	_sun_altitude = "%.2f°" % s.sun_altitude
+	_sun_azimuth = "%.2f°" % s.sun_azimuth
+	_sun_distance = "%.6f AU" % s.sun_distance_au
+	_sun_energy = "%.0f%%" % (s.sun_energy * 100.0)
+
+	# Moon
+	_moon_phase = "%s (%.1f°)" % [s.moon_phase_name, s.moon_phase_deg]
+	_moon_altitude = "%.2f°" % s.moon_altitude
+	_moon_azimuth = "%.2f°" % s.moon_azimuth
+	_moon_distance = "%.0f km" % s.moon_distance_km
+	_moon_diameter = "%.4f°" % s.moon_diameter_deg
+	_moon_illumination = "%.1f%%" % (s.moon_illumination * 100.0)
+
+	# Sky
+	if s.is_day: _sky_condition = "Day"
+	elif s.is_civil_twilight: _sky_condition = "Civil Twilight"
+	elif s.is_nautical_twilight: _sky_condition = "Nautical Twilight"
+	elif s.is_astronomical_twilight: _sky_condition = "Astronomical Twilight"
+	else: _sky_condition = "Night"
+	_sky_darkness = "%.0f%%" % (s.sky_darkness * 100.0)
+	_sky_sidereal_time = "%.4f h" % s.sidereal_time
+	_sky_julian_day = "%.4f" % s.julian_day
+
+	# Planets
+	var visible_list: PackedStringArray = PackedStringArray()
+	for pname: String in s.planet_altitudes:
+		var alt: float = s.planet_altitudes[pname] as float
+		if alt > 0.0:
+			visible_list.append("%s %.1f°" % [pname, alt])
+	_planets_visible = ", ".join(visible_list) if visible_list.size() > 0 else "(none above horizon)"
