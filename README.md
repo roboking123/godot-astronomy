@@ -129,7 +129,7 @@ Coordinate transforms, nutation, precession, observer position.
 | `j2000_to_ofdate(pos, time)` | `Vector3` | J2000 → of-date (precession + nutation) |
 | `ofdate_to_j2000(pos, time)` | `Vector3` | of-date → J2000 |
 | `vector2radec(pos)` | `RaDec` | Cartesian → right ascension (hours) + declination (degrees) |
-| `horizon(time, lat, lon, ra, dec)` | `HorizonCoord` | Equatorial → horizon (azimuth + altitude with refraction) |
+| `horizon(time, lat, lon, ra, dec)` | `HorizonCoord` | Equatorial → horizon (azimuth + altitude with refraction). **ra/dec must be of-date, not J2000** — use `j2000_to_ofdate()` + `vector2radec()` first |
 | `ecliptic(j2000_vec, time)` | `EclipticCoord` | J2000 → ecliptic longitude/latitude |
 | `geo_pos(time, lat, lon, height)` | `Vector3` | Observer's geocentric J2000 position (WGS84 ellipsoid) |
 | `sidereal_time(time)` | `float` | GAST sidereal time (hours) |
@@ -230,12 +230,14 @@ Same algorithms as [cosinekitty/astronomy](https://github.com/cosinekitty/astron
 
 ## Demo Scenes
 
+Press F5 to launch the **demo menu** — pick a scene from there.
+
 | Scene | Description |
 |-------|-------------|
-| `demo/examples.gd` | **Start here** — 7 common recipes, runs headless, copy-paste ready |
-| `demo/solar_system_view.tscn` | Top-down solar system with real VSOP87 orbits (default main scene) |
-| `demo/day_night_demo.tscn` | 3D sky with sun/moon/planets, free camera, Rayleigh scattering |
-| `demo/demo.tscn` | Text output showing all computed values |
+| `demo/main_menu.tscn` | **Start here** — demo launcher (default main scene) |
+| `demo/day_night_demo.tscn` | 3D day/night cycle with sun/moon/planets, Rayleigh sky color, free camera |
+| `demo/solar_system_view.tscn` | Top-down solar system with real VSOP87 orbits |
+| `demo/examples.gd` | 7 common recipes, runs headless (`godot --headless -s demo/examples.gd`) |
 
 ## Roadmap
 
