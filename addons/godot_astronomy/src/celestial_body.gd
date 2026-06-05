@@ -119,6 +119,9 @@ func _ensure_lights() -> void:
 		sun_light = DirectionalLight3D.new()
 		sun_light.name = "SunLight"
 		sun_light.shadow_enabled = true
+		sun_light.shadow_bias = 0.1
+		sun_light.directional_shadow_max_distance = 200.0
+		sun_light.shadow_normal_bias = 2.0
 		add_child(sun_light)
 	if moon_light == null:
 		moon_light = DirectionalLight3D.new()

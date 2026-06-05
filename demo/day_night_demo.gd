@@ -261,7 +261,9 @@ func _update_sky_color() -> void:
 	env.background_color = sky_color
 
 	env.ambient_light_energy = lerpf(0.005, 0.4, 1.0 - s.sky_darkness)
-	env.ambient_light_color = sky_color.lerp(Color.WHITE, 0.3)
+	var warm_t: float = clampf((10.0 - s.sun_altitude) / 20.0, 0.0, 1.0)
+	var ambient_tint: Color = Color.WHITE.lerp(Color(1.0, 0.85, 0.7), warm_t * 0.4)
+	env.ambient_light_color = sky_color.lerp(ambient_tint, 0.3)
 
 
 ## 從查找表取樣天空色（線性插值）
