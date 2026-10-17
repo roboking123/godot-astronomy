@@ -14,7 +14,8 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 
 [application]
 
-config/name="Godot Astronomy"
+config/name="工具：天文計算"
+config/tags=PackedStringArray("工具")
 config/description="Precise astronomical calculations for Godot 4 — sun, moon, coordinates, and more."
 run/main_scene="res://demo/main_menu.tscn"
 config/features=PackedStringArray("4.6")
