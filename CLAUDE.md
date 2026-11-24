@@ -1,1 +1,1 @@
-@../_shared/rules/godot.md
+@../../_shared/rules/godot.md
